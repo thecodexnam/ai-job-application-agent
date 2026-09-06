@@ -1,69 +1,175 @@
-import Image from "next/image";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { buttonVariants } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "cn";
+import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  Briefcase02Icon,
+  SparklesIcon,
+  ArrowRight01Icon,
+  CheckmarkBadge01Icon,
+  SecurityCheckIcon,
+  ZapIcon,
+} from "@hugeicons/core-free-icons";
 
-export default function Home() {
+export default async function HomePage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="relative min-h-screen flex flex-col justify-between bg-background text-foreground selection:bg-primary/20 selection:text-primary overflow-hidden">
+      {/* Background Ambience */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-40 -left-40 h-[600px] w-[600px] rounded-full bg-primary/15 blur-3xl" />
+        <div className="absolute top-1/2 -right-40 h-[600px] w-[600px] rounded-full bg-primary/10 blur-3xl" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)]" />
+      </div>
+
+      {/* Navigation */}
+      <header className="relative z-10 w-full max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20 shadow-sm">
+            <HugeiconsIcon icon={Briefcase02Icon} className="size-5" />
+          </div>
+          <span className="text-base font-semibold tracking-tight text-foreground flex items-center gap-1.5">
+            ApplyAI
+            <Badge variant="secondary" className="gap-1 text-[10px] font-medium">
+              <HugeiconsIcon icon={SparklesIcon} className="size-2.5" />
+              Agent
+            </Badge>
+          </span>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+        <div className="flex items-center gap-3">
+          {user ? (
+            <Link
+              href="/dashboard"
+              className={cn(
+                buttonVariants({ size: "sm" }),
+                "gap-1.5 font-semibold shadow-sm"
+              )}
+            >
+              <span>Go to Dashboard</span>
+              <HugeiconsIcon icon={ArrowRight01Icon} className="size-3.5" />
+            </Link>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className={cn(
+                  buttonVariants({ variant: "ghost", size: "sm" }),
+                  "text-xs"
+                )}
+              >
+                Sign In
+              </Link>
+              <Link
+                href="/signup"
+                className={cn(
+                  buttonVariants({ size: "sm" }),
+                  "gap-1.5 text-xs font-semibold shadow-sm"
+                )}
+              >
+                <span>Get Started</span>
+                <HugeiconsIcon icon={ArrowRight01Icon} className="size-3.5" />
+              </Link>
+            </>
+          )}
+        </div>
+      </header>
+
+      {/* Hero Section */}
+      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 py-16 text-center max-w-4xl mx-auto">
+        <Badge
+          variant="outline"
+          className="gap-2 border-primary/30 bg-primary/10 text-primary px-4 py-1 text-xs font-medium mb-6 backdrop-blur-md"
+        >
+          <HugeiconsIcon icon={SparklesIcon} className="size-3.5" />
+          Autonomous Job Application System
+        </Badge>
+
+        <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-foreground leading-tight">
+          Supercharge your career with an{" "}
+          <span className="bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
+            AI Job Agent
+          </span>
+        </h1>
+
+        <p className="mt-6 text-sm sm:text-base text-muted-foreground max-w-2xl leading-relaxed">
+          Tailor your resume, craft company-specific cover letters, and track every application in one intuitive dashboard built with Shadcn UI and Supabase.
+        </p>
+
+        <div className="mt-8 flex flex-col sm:flex-row items-center gap-4">
+          <Link
+            href={user ? "/dashboard" : "/signup"}
+            className={cn(
+              buttonVariants({ size: "lg" }),
+              "h-11 px-6 text-sm font-semibold shadow-lg shadow-primary/20 gap-2"
+            )}
           >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            <span>{user ? "Open Dashboard" : "Start Applying for Free"}</span>
+            <HugeiconsIcon icon={ArrowRight01Icon} className="size-4" />
+          </Link>
+
+          <Link
+            href="/login"
+            className={cn(
+              buttonVariants({ variant: "outline", size: "lg" }),
+              "h-11 px-6 text-sm"
+            )}
           >
-            Documentation
-          </a>
+            Sign In with Email or Google
+          </Link>
+        </div>
+
+        {/* Feature Highlights using Shadcn Cards */}
+        <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-6 w-full text-left">
+          <Card className="border-border/70 bg-card/40 backdrop-blur-md">
+            <CardContent className="p-5">
+              <div className="flex size-9 items-center justify-center rounded-xl bg-primary/10 text-primary mb-3">
+                <HugeiconsIcon icon={ZapIcon} className="size-4" />
+              </div>
+              <h3 className="text-sm font-semibold text-foreground">Instant AI Tailoring</h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                Match your experience directly to job descriptions in seconds.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/70 bg-card/40 backdrop-blur-md">
+            <CardContent className="p-5">
+              <div className="flex size-9 items-center justify-center rounded-xl bg-primary/10 text-primary mb-3">
+                <HugeiconsIcon icon={CheckmarkBadge01Icon} className="size-4" />
+              </div>
+              <h3 className="text-sm font-semibold text-foreground">Application Pipeline</h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                Track status from wishlist to interview to final offer.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/70 bg-card/40 backdrop-blur-md">
+            <CardContent className="p-5">
+              <div className="flex size-9 items-center justify-center rounded-xl bg-primary/10 text-primary mb-3">
+                <HugeiconsIcon icon={SecurityCheckIcon} className="size-4" />
+              </div>
+              <h3 className="text-sm font-semibold text-foreground">Protected & Private</h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                Protected by Supabase Auth, Row Level Security, and Next.js Middleware.
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </main>
+
+      {/* Footer */}
+      <footer className="relative z-10 py-6 text-center text-xs text-muted-foreground">
+        <p>© {new Date().getFullYear()} ApplyAI. Built with Shadcn UI, Next.js & Supabase</p>
+      </footer>
     </div>
   );
 }
