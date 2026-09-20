@@ -135,13 +135,16 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: profileError.message }, { status: 500 });
     }
 
-    // 2. Sync profile_skills
-    if (body.categorized_skills) {
+    // 2. Sync profile_skills (filter out empty names)
+    if (body.categorized_skills !== undefined) {
       await supabase.from("profile_skills").delete().eq("user_id", user.id);
-      if (body.categorized_skills.length > 0) {
-        const toInsert = body.categorized_skills.map((s, idx) => ({
+      const validSkills = (body.categorized_skills || []).filter(
+        (s) => s && s.name && s.name.trim().length > 0
+      );
+      if (validSkills.length > 0) {
+        const toInsert = validSkills.map((s, idx) => ({
           user_id: user.id,
-          name: s.name,
+          name: s.name.trim(),
           category: s.category || "Technical Skills",
           level: s.level || "Intermediate",
           order_index: idx,
@@ -150,20 +153,27 @@ export async function PUT(req: NextRequest) {
       }
     }
 
-    // 3. Sync work_experiences
-    if (body.work_experiences) {
+    // 3. Sync work_experiences (filter out blank experiences)
+    if (body.work_experiences !== undefined) {
       await supabase.from("work_experiences").delete().eq("user_id", user.id);
-      if (body.work_experiences.length > 0) {
-        const toInsert = body.work_experiences.map((exp, idx) => ({
+      const validExp = (body.work_experiences || []).filter(
+        (exp) =>
+          exp &&
+          ((exp.company_name && exp.company_name.trim().length > 0) ||
+            (exp.position && exp.position.trim().length > 0) ||
+            (exp.description && exp.description.trim().length > 0))
+      );
+      if (validExp.length > 0) {
+        const toInsert = validExp.map((exp, idx) => ({
           user_id: user.id,
-          company_name: exp.company_name,
-          position: exp.position,
+          company_name: (exp.company_name || "").trim(),
+          position: (exp.position || "").trim(),
           employment_type: exp.employment_type || null,
-          location: exp.location || null,
+          location: exp.location?.trim() || null,
           start_date: exp.start_date || null,
           end_date: exp.end_date || null,
           is_current: !!exp.is_current,
-          description: exp.description || null,
+          description: exp.description?.trim() || null,
           highlights: exp.highlights || [],
           order_index: idx,
         }));
@@ -171,37 +181,49 @@ export async function PUT(req: NextRequest) {
       }
     }
 
-    // 4. Sync educations
-    if (body.educations) {
+    // 4. Sync educations (filter out blank educations)
+    if (body.educations !== undefined) {
       await supabase.from("educations").delete().eq("user_id", user.id);
-      if (body.educations.length > 0) {
-        const toInsert = body.educations.map((edu, idx) => ({
+      const validEdu = (body.educations || []).filter(
+        (edu) =>
+          edu &&
+          ((edu.institution && edu.institution.trim().length > 0) ||
+            (edu.degree && edu.degree.trim().length > 0))
+      );
+      if (validEdu.length > 0) {
+        const toInsert = validEdu.map((edu, idx) => ({
           user_id: user.id,
-          institution: edu.institution,
-          degree: edu.degree,
-          field_of_study: edu.field_of_study || null,
-          location: edu.location || null,
+          institution: (edu.institution || "").trim(),
+          degree: (edu.degree || "").trim(),
+          field_of_study: edu.field_of_study?.trim() || null,
+          location: edu.location?.trim() || null,
           start_date: edu.start_date || null,
           end_date: edu.end_date || null,
-          grade: edu.grade || null,
-          description: edu.description || null,
+          grade: edu.grade?.trim() || null,
+          description: edu.description?.trim() || null,
           order_index: idx,
         }));
         await supabase.from("educations").insert(toInsert);
       }
     }
 
-    // 5. Sync projects
-    if (body.projects) {
+    // 5. Sync projects (filter out blank projects)
+    if (body.projects !== undefined) {
       await supabase.from("projects").delete().eq("user_id", user.id);
-      if (body.projects.length > 0) {
-        const toInsert = body.projects.map((p, idx) => ({
+      const validProj = (body.projects || []).filter(
+        (p) =>
+          p &&
+          ((p.title && p.title.trim().length > 0) ||
+            (p.description && p.description.trim().length > 0))
+      );
+      if (validProj.length > 0) {
+        const toInsert = validProj.map((p, idx) => ({
           user_id: user.id,
-          title: p.title,
-          description: p.description || null,
+          title: (p.title || "").trim(),
+          description: p.description?.trim() || null,
           technologies: p.technologies || [],
-          github_url: p.github_url || null,
-          live_url: p.live_url || null,
+          github_url: p.github_url?.trim() || null,
+          live_url: p.live_url?.trim() || null,
           highlights: p.highlights || [],
           order_index: idx,
         }));
@@ -209,35 +231,44 @@ export async function PUT(req: NextRequest) {
       }
     }
 
-    // 6. Sync certifications
-    if (body.certifications) {
+    // 6. Sync certifications (filter out blank certifications)
+    if (body.certifications !== undefined) {
       await supabase.from("certifications").delete().eq("user_id", user.id);
-      if (body.certifications.length > 0) {
-        const toInsert = body.certifications.map((c, idx) => ({
+      const validCert = (body.certifications || []).filter(
+        (c) => c && c.name && c.name.trim().length > 0
+      );
+      if (validCert.length > 0) {
+        const toInsert = validCert.map((c, idx) => ({
           user_id: user.id,
-          name: c.name,
-          issuing_organization: c.issuing_organization,
+          name: c.name.trim(),
+          issuing_organization: c.issuing_organization?.trim() || "",
           issue_date: c.issue_date || null,
           expiration_date: c.expiration_date || null,
-          credential_id: c.credential_id || null,
-          credential_url: c.credential_url || null,
+          credential_id: c.credential_id?.trim() || null,
+          credential_url: c.credential_url?.trim() || null,
           order_index: idx,
         }));
         await supabase.from("certifications").insert(toInsert);
       }
     }
 
-    // 7. Sync additional_info
-    if (body.additional_info) {
+    // 7. Sync additional_info (filter out blank additional info)
+    if (body.additional_info !== undefined) {
       await supabase.from("additional_info").delete().eq("user_id", user.id);
-      if (body.additional_info.length > 0) {
-        const toInsert = body.additional_info.map((a, idx) => ({
+      const validAddit = (body.additional_info || []).filter(
+        (a) =>
+          a &&
+          ((a.title && a.title.trim().length > 0) ||
+            (a.description && a.description.trim().length > 0))
+      );
+      if (validAddit.length > 0) {
+        const toInsert = validAddit.map((a, idx) => ({
           user_id: user.id,
-          category: a.category,
-          title: a.title,
-          description: a.description || null,
+          category: a.category || "Other",
+          title: (a.title || "").trim(),
+          description: a.description?.trim() || null,
           date: a.date || null,
-          url: a.url || null,
+          url: a.url?.trim() || null,
           order_index: idx,
         }));
         await supabase.from("additional_info").insert(toInsert);
