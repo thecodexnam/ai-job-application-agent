@@ -33,6 +33,7 @@ export async function POST(request: NextRequest) {
       "lever",
       "workable",
       "wellfound",
+      "indeed",
     ];
 
     const requestedPlatforms: JobPlatform[] =
