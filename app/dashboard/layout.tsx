@@ -47,7 +47,16 @@ export default async function DashboardLayout({
   return (
     <TooltipProvider delay={150}>
       <SidebarProvider defaultOpen={true}>
-        <div className="flex min-h-screen w-full bg-[#09090B] text-[#FAFAFA] selection:bg-purple-500/30 selection:text-purple-300">
+        <div
+          className="flex min-h-screen w-full bg-[#EDEBE0] text-[#0F0F0F]"
+          style={{
+            backgroundImage: `linear-gradient(to right, rgba(0,0,0,0.04) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.04) 1px, transparent 1px)`,
+            backgroundSize: "2.5rem 2.5rem",
+          }}
+        >
+          {/* Lavender frame border */}
+          <div className="pointer-events-none fixed inset-0 z-50 border-4 border-[#B8AEF5]" />
+
           {/* Collapsible Left Sidebar */}
           <AppSidebar
             user={{
@@ -58,9 +67,9 @@ export default async function DashboardLayout({
           />
 
           {/* Main Content Viewport */}
-          <SidebarInset className="flex flex-1 flex-col min-w-0 bg-[#09090B]">
+          <SidebarInset className="flex flex-1 flex-col min-w-0 bg-transparent">
             <DashboardHeader displayName={displayName} />
-            <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8 bg-[#09090B]">
+            <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8">
               <div className="mx-auto max-w-6xl w-full">
                 {children}
               </div>
