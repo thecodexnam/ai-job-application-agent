@@ -4,17 +4,9 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   SparklesIcon,
-  PlusSignIcon,
   File02Icon,
   Calendar03Icon,
   Briefcase02Icon,
@@ -22,11 +14,11 @@ import {
   FlashIcon,
   ArrowRight01Icon,
 } from "@hugeicons/core-free-icons";
+import type { Tables } from "@/types/database.types";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
 
-  // Verify authenticated user
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -35,7 +27,6 @@ export default async function DashboardPage() {
     redirect("/login?next=/dashboard");
   }
 
-  // Fetch user profile from Supabase
   let profile = null;
   try {
     const { data } = await supabase
@@ -44,12 +35,9 @@ export default async function DashboardPage() {
       .eq("id", user.id)
       .single();
     profile = data;
-  } catch {
-    // Fallback if needed
-  }
+  } catch {}
 
-  // Fetch applications list from Supabase
-  let applications: any[] = [];
+  let applications: Tables<"job_applications">[] = [];
   try {
     const { data } = await supabase
       .from("job_applications")
@@ -57,9 +45,7 @@ export default async function DashboardPage() {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
     applications = data || [];
-  } catch {
-    // Fallback
-  }
+  } catch {}
 
   const displayName =
     profile?.full_name ||
@@ -68,76 +54,77 @@ export default async function DashboardPage() {
     user.email?.split("@")[0] ||
     "Job Hunter";
 
-  // Compute stat counters
   const totalCount = applications.length;
-  const interviewingCount = applications.filter(
-    (a) => a.status === "interviewing"
-  ).length;
+  const interviewingCount = applications.filter((a) => a.status === "interviewing").length;
   const offerCount = applications.filter((a) => a.status === "offer").length;
   const appliedCount = applications.filter((a) => a.status === "applied").length;
 
-  // Generate simulated activity grid columns for the weekly engagement heatmap (inspired by reference UI)
-  const heatmapRows = ["Mon", "Wed", "Fri"];
-  const heatmapCols = Array.from({ length: 14 }, (_, i) => i + 1);
+  const activityDays = Array.from({ length: 14 }, (_, index) => {
+    const date = new Date();
+    date.setDate(date.getDate() - (13 - index));
+    const key = date.toISOString().slice(0, 10);
+    return {
+      key,
+      label: new Intl.DateTimeFormat("en", { weekday: "short" }).format(date),
+      count: applications.filter((application) => application.created_at.slice(0, 10) === key).length,
+    };
+  });
+  const peakActivity = Math.max(1, ...activityDays.map((day) => day.count));
 
   return (
     <div className="space-y-6 pb-8">
-      {/* Top Greeting */}
+      {/* ── Greeting ── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#FAFAFA]">
+          <h1
+            className="text-3xl sm:text-4xl font-black tracking-tight text-[#0F0F0F]"
+            style={{ fontFamily: "'Playfair Display', serif" }}
+          >
             Hi, {displayName}!
           </h1>
-          <p className="text-sm text-[#A1A1AA] mt-0.5">
-            What do you want to accomplish with your AI career agent today?
+          <p className="text-sm text-[#5A5A5A] mt-0.5 font-medium">
+            Search roles, prepare your materials, and track applications in one workspace.
           </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Badge
-            variant="outline"
-            className="gap-1.5 border-purple-500/30 bg-purple-500/10 text-purple-300 text-xs py-1 px-3 font-semibold rounded-full"
-          >
-            <span className="size-1.5 rounded-full bg-purple-400 animate-pulse" />
-            AI Copilot Active
-          </Badge>
         </div>
       </div>
 
-      {/* Hero Bento Card (Inspired by PromptPal & Campus Intelligence in reference images) */}
-      <Card className="relative overflow-hidden rounded-3xl border border-[#3F3F46] bg-gradient-to-br from-[#18181B] via-[#1c1926] to-[#12101d] shadow-xl">
-        {/* Ambient Glows */}
-        <div className="pointer-events-none absolute -right-16 -top-16 size-80 rounded-full bg-purple-600/20 blur-3xl" />
-        <div className="pointer-events-none absolute left-1/3 -bottom-20 size-72 rounded-full bg-indigo-600/15 blur-3xl" />
+      {/* ── Hero Bento ── */}
+      <div className="relative overflow-hidden rounded-2xl border-2 border-[#1A1A1A] bg-[#0F0F0F] text-white shadow-[6px_6px_0px_#1A1A1A]">
+        {/* Accent dots */}
+        <div className="pointer-events-none absolute top-4 right-4 size-32 rounded-full bg-[#C5F135]/10 blur-2xl" />
+        <div className="pointer-events-none absolute bottom-0 left-1/4 size-24 rounded-full bg-[#6366F1]/15 blur-2xl" />
 
-        <CardContent className="relative z-10 p-6 sm:p-8 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
+        <div className="relative z-10 p-6 sm:p-8 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
           <div className="space-y-3 max-w-xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-purple-500/30 bg-purple-500/15 px-3 py-1 text-xs font-semibold text-purple-300">
-              <HugeiconsIcon icon={SparklesIcon} className="size-3 text-purple-400" />
-              <span>Autonomous Job Search & Matching</span>
+            <div className="inline-flex items-center gap-2 rounded-sm border border-[#C5F135]/40 bg-[#C5F135]/10 px-3 py-1 text-xs font-bold text-[#C5F135] uppercase tracking-widest">
+              <HugeiconsIcon icon={SparklesIcon} className="size-3" />
+              Job search workspace
             </div>
 
-            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#FAFAFA] leading-tight">
-              Your AI Career Companion
+            <h2
+              className="text-2xl sm:text-3xl font-black tracking-tight text-white leading-tight"
+              style={{ fontFamily: "'Playfair Display', serif" }}
+            >
+              Keep your search moving
             </h2>
 
             <p className="text-xs sm:text-sm text-[#A1A1AA] leading-relaxed">
-              JobBuddy continuously parses job postings, scores your resume for ATS match precision, and drafts tailored application packages in seconds.
+              Find verified openings, prepare your resume, and keep every application organized.
             </p>
 
             <div className="flex flex-wrap items-center gap-3 pt-2">
               <Button
-                render={<Link href="/dashboard/status" />}
-                className="gap-2 text-xs font-semibold cursor-pointer rounded-xl bg-gradient-to-r from-[#A855F7] to-[#7C3AED] hover:from-[#9333EA] hover:to-[#6D28D9] text-white shadow-lg shadow-purple-500/25 px-4 py-2"
+                render={<Link href="/dashboard/jobs" />}
+                className="gap-2 text-xs font-bold cursor-pointer rounded-md bg-[#C5F135] hover:bg-[#B0DC1A] text-[#0F0F0F] border-2 border-[#C5F135] shadow-[3px_3px_0px_rgba(197,241,53,0.3)] px-4 py-2"
               >
-                <HugeiconsIcon icon={PlusSignIcon} className="size-3.5" />
-                Track New Application
+                <HugeiconsIcon icon={Briefcase02Icon} className="size-3.5" />
+                Browse Jobs
               </Button>
 
               <Button
                 render={<Link href="/dashboard/resume" />}
                 variant="outline"
-                className="gap-2 text-xs font-medium cursor-pointer rounded-xl border border-[#3F3F46] bg-[#27272A]/70 text-[#FAFAFA] hover:bg-[#3F3F46] px-4 py-2"
+                className="gap-2 text-xs font-semibold cursor-pointer rounded-md border-2 border-white/20 bg-white/5 text-white hover:bg-white/10 px-4 py-2"
               >
                 <HugeiconsIcon icon={File02Icon} className="size-3.5 text-[#A1A1AA]" />
                 Tailor Resume
@@ -145,295 +132,266 @@ export default async function DashboardPage() {
             </div>
           </div>
 
-          {/* Stylized AI Orb Preview (Inspired by reference Image 1 orb) */}
-          <div className="hidden lg:flex flex-col items-center justify-center">
-            <div className="relative flex size-36 items-center justify-center rounded-full bg-gradient-to-br from-purple-500/30 via-indigo-500/20 to-transparent p-1 shadow-2xl shadow-purple-500/20 ring-1 ring-purple-500/40">
-              <div className="flex size-full items-center justify-center rounded-full bg-[#09090B]/90 backdrop-blur-md">
-                <div className="relative flex size-20 items-center justify-center rounded-2xl bg-gradient-to-br from-[#A855F7] to-[#6366F1] shadow-lg shadow-purple-500/40 animate-pulse">
-                  <HugeiconsIcon icon={SparklesIcon} className="size-10 text-white" />
-                </div>
+
+        </div>
+      </div>
+
+      {/* ── 4 Stat Cards ── */}
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          {
+            label: "Total Tracked",
+            value: totalCount,
+            unit: "roles",
+            note: "Saved & tracked",
+            icon: Briefcase02Icon,
+            accent: "#0F0F0F",
+            accentText: "#C5F135",
+          },
+          {
+            label: "Submitted",
+            value: appliedCount,
+            unit: "sent",
+            note: "Ready for follow-ups",
+            icon: Task01Icon,
+            accent: "#6366F1",
+            accentText: "white",
+          },
+          {
+            label: "Interviews",
+            value: interviewingCount,
+            unit: "roles",
+            note: "In this stage",
+            icon: Calendar03Icon,
+            accent: "#E8E5D4",
+            accentText: "#0F0F0F",
+          },
+          {
+            label: "Offers",
+            value: offerCount,
+            unit: "roles",
+            note: "In this stage",
+            icon: SparklesIcon,
+            accent: "#C5F135",
+            accentText: "#0F0F0F",
+          },
+        ].map((stat) => (
+          <div
+            key={stat.label}
+            className="rounded-xl border-2 border-[#1A1A1A] bg-white p-5 shadow-[4px_4px_0px_#1A1A1A] hover:shadow-[2px_2px_0px_#1A1A1A] hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
+          >
+            <div className="flex items-center justify-between pb-3">
+              <span className="text-xs font-bold text-[#5A5A5A] uppercase tracking-wider">{stat.label}</span>
+              <div
+                className="flex size-7 items-center justify-center rounded-md border-2 border-[#1A1A1A]"
+                style={{ backgroundColor: stat.accent, color: stat.accentText }}
+              >
+                <HugeiconsIcon icon={stat.icon} className="size-3.5" />
               </div>
             </div>
-            <span className="mt-2 text-[11px] font-semibold text-purple-300">
-              100% Match Engine
-            </span>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 4 Stat Bento Cards (Inspired by Sapphire UI stats in Image 2) */}
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total Tracked */}
-        <Card className="rounded-2xl border border-[#27272A] bg-[#18181B] p-5 shadow-sm transition-all hover:border-[#3F3F46]">
-          <div className="flex items-center justify-between pb-3">
-            <span className="text-xs font-medium text-[#A1A1AA]">Total Tracked</span>
-            <div className="flex size-7 items-center justify-center rounded-lg bg-[#27272A] text-[#FAFAFA]">
-              <HugeiconsIcon icon={Briefcase02Icon} className="size-3.5" />
+            <div className="flex items-baseline justify-between">
+              <span
+                className="text-3xl sm:text-4xl font-black text-[#0F0F0F] tracking-tight tabular-nums"
+                style={{ fontFamily: "'Playfair Display', serif" }}
+              >
+                {stat.value}
+              </span>
+              <span className="text-[11px] font-medium text-[#5A5A5A]">{stat.unit}</span>
             </div>
+            <p className="text-[11px] text-[#6366F1] mt-2 font-bold flex items-center gap-1">
+              <HugeiconsIcon icon={FlashIcon} className="size-3" />
+              {stat.note}
+            </p>
           </div>
-          <div className="flex items-baseline justify-between">
-            <span className="text-2xl sm:text-3xl font-bold text-[#FAFAFA] tracking-tight tabular-nums">
-              {totalCount}
-            </span>
-            <span className="text-[11px] font-medium text-[#A1A1AA]">jobs</span>
-          </div>
-          <p className="text-[11px] text-purple-400 mt-2 flex items-center gap-1 font-medium">
-            <HugeiconsIcon icon={FlashIcon} className="size-3" />
-            Active pipeline
-          </p>
-        </Card>
-
-        {/* Submitted */}
-        <Card className="rounded-2xl border border-[#27272A] bg-[#18181B] p-5 shadow-sm transition-all hover:border-[#3F3F46]">
-          <div className="flex items-center justify-between pb-3">
-            <span className="text-xs font-medium text-[#A1A1AA]">Submitted</span>
-            <div className="flex size-7 items-center justify-center rounded-lg bg-indigo-500/15 text-indigo-400 border border-indigo-500/30">
-              <HugeiconsIcon icon={Task01Icon} className="size-3.5" />
-            </div>
-          </div>
-          <div className="flex items-baseline justify-between">
-            <span className="text-2xl sm:text-3xl font-bold text-indigo-400 tracking-tight tabular-nums">
-              {appliedCount}
-            </span>
-            <span className="text-[11px] font-medium text-[#A1A1AA]">sent</span>
-          </div>
-          <p className="text-[11px] text-indigo-300 mt-2 font-medium">
-            Ready for follow-ups
-          </p>
-        </Card>
-
-        {/* Interviews */}
-        <Card className="rounded-2xl border border-[#27272A] bg-[#18181B] p-5 shadow-sm transition-all hover:border-[#3F3F46]">
-          <div className="flex items-center justify-between pb-3">
-            <span className="text-xs font-medium text-[#A1A1AA]">Interviews</span>
-            <div className="flex size-7 items-center justify-center rounded-lg bg-purple-500/15 text-purple-400 border border-purple-500/30">
-              <HugeiconsIcon icon={Calendar03Icon} className="size-3.5" />
-            </div>
-          </div>
-          <div className="flex items-baseline justify-between">
-            <span className="text-2xl sm:text-3xl font-bold text-purple-400 tracking-tight tabular-nums">
-              {interviewingCount}
-            </span>
-            <span className="text-[11px] font-medium text-[#A1A1AA]">rounds</span>
-          </div>
-          <p className="text-[11px] text-purple-300 mt-2 font-medium">
-            Scheduled stages
-          </p>
-        </Card>
-
-        {/* Offers */}
-        <Card className="rounded-2xl border border-[#27272A] bg-[#18181B] p-5 shadow-sm transition-all hover:border-[#3F3F46]">
-          <div className="flex items-center justify-between pb-3">
-            <span className="text-xs font-medium text-[#A1A1AA]">Offers</span>
-            <div className="flex size-7 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-              <HugeiconsIcon icon={SparklesIcon} className="size-3.5" />
-            </div>
-          </div>
-          <div className="flex items-baseline justify-between">
-            <span className="text-2xl sm:text-3xl font-bold text-emerald-400 tracking-tight tabular-nums">
-              {offerCount}
-            </span>
-            <span className="text-[11px] font-medium text-[#A1A1AA]">received</span>
-          </div>
-          <p className="text-[11px] text-emerald-400 mt-2 font-medium">
-            Top compensation
-          </p>
-        </Card>
+        ))}
       </section>
 
-      {/* Middle Bento Row: AI Capabilities & Weekly Activity Grid (Inspired by reference images) */}
+      {/* ── Middle Row: Heatmap + AI Tools ── */}
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Weekly Engagement Heatmap (Inspired by Image 2 right side) */}
-        <Card className="lg:col-span-2 rounded-3xl border border-[#27272A] bg-[#18181B] p-6 shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[#27272A] gap-3">
+        {/* Weekly Activity */}
+        <div className="lg:col-span-2 rounded-xl border-2 border-[#1A1A1A] bg-white p-6 shadow-[4px_4px_0px_#1A1A1A]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b-2 border-[#1A1A1A] gap-3">
             <div>
-              <CardTitle className="text-base font-semibold text-[#FAFAFA] flex items-center gap-2">
-                <HugeiconsIcon icon={FlashIcon} className="size-4 text-purple-400" />
-                <span>Application Velocity & Engagement</span>
-              </CardTitle>
-              <CardDescription className="text-xs text-[#A1A1AA] mt-0.5">
-                AI application pacing and recruiter response frequency
-              </CardDescription>
+              <h3
+                className="text-base font-black text-[#0F0F0F] flex items-center gap-2"
+                style={{ fontFamily: "'Playfair Display', serif" }}
+              >
+                <HugeiconsIcon icon={FlashIcon} className="size-4 text-[#C5F135]" />
+                Application Velocity
+              </h3>
+              <p className="text-xs text-[#5A5A5A] mt-0.5 font-medium">
+                Based on the roles you have actually added
+              </p>
             </div>
 
             {/* Heatmap Legend */}
-            <div className="flex items-center gap-2 text-[10px] text-[#A1A1AA]">
+            <div className="flex items-center gap-2 text-[10px] text-[#5A5A5A] font-medium">
               <span>Low</span>
               <div className="flex items-center gap-1">
-                <span className="size-2.5 rounded-xs bg-[#27272A]" />
-                <span className="size-2.5 rounded-xs bg-indigo-900/60" />
-                <span className="size-2.5 rounded-xs bg-[#6366F1]" />
-                <span className="size-2.5 rounded-xs bg-[#A855F7]" />
+                <span className="size-2.5 rounded-xs border border-[#1A1A1A] bg-[#E8E5D4]" />
+                <span className="size-2.5 rounded-xs border border-[#1A1A1A] bg-[#6366F1]/30" />
+                <span className="size-2.5 rounded-xs border border-[#1A1A1A] bg-[#6366F1]" />
+                <span className="size-2.5 rounded-xs border border-[#1A1A1A] bg-[#C5F135]" />
               </div>
               <span>Peak</span>
             </div>
           </div>
 
-          {/* Heatmap Grid Matrix */}
-          <div className="pt-5 space-y-2 overflow-x-auto">
-            {heatmapRows.map((rowLabel, rIdx) => (
-              <div key={rowLabel} className="flex items-center gap-2 text-xs">
-                <span className="w-8 text-[11px] text-[#71717A]">{rowLabel}</span>
-                <div className="flex items-center gap-1.5 flex-1">
-                  {heatmapCols.map((c) => {
-                    const intensity = (rIdx + c) % 4;
-                    const bgClass =
-                      intensity === 3
-                        ? "bg-[#A855F7] shadow-xs shadow-purple-500/50"
-                        : intensity === 2
-                        ? "bg-[#6366F1]"
-                        : intensity === 1
-                        ? "bg-[#27272A]"
-                        : "bg-[#1f1f23]";
-
-                    return (
-                      <div
-                        key={c}
-                        className={`h-5 flex-1 rounded-sm ${bgClass} transition-transform hover:scale-110 cursor-pointer`}
-                        title={`Day ${c}: Activity index ${intensity}`}
-                      />
-                    );
-                  })}
+          <div className="pt-5">
+            <div className="flex h-32 items-end gap-1.5 sm:gap-2" role="img" aria-label="Applications added each day over the last 14 days">
+              {activityDays.map((day) => (
+                <div key={day.key} className="flex min-w-0 flex-1 flex-col items-center justify-end gap-2">
+                  <span className="text-[10px] font-medium tabular-nums text-[#5A5A5A]">{day.count || ""}</span>
+                  <div
+                    className={`w-full max-w-8 border border-[#1A1A1A]/20 ${day.count ? "bg-[#C5F135]" : "bg-[#E8E5D4]"}`}
+                    style={{ height: `${Math.max(6, (day.count / peakActivity) * 72)}px` }}
+                    title={`${day.count} ${day.count === 1 ? "application" : "applications"} added on ${day.key}`}
+                  />
+                  <span className="text-[9px] text-[#77796f]">{day.label}</span>
                 </div>
-              </div>
-            ))}
-
-            <div className="flex items-center justify-between pt-3 text-[11px] text-[#71717A]">
-              <span>14-day rolling window</span>
-              <span className="text-purple-400 font-medium">Optimal consistency rate: 88%</span>
+              ))}
             </div>
+            <p className="pt-3 text-[11px] font-medium text-[#5A5A5A]">Applications added per day · last 14 days</p>
           </div>
-        </Card>
+        </div>
 
-        {/* AI Copilot Tools (Inspired by PromptPal bento items in Image 1) */}
-        <Card className="rounded-3xl border border-[#27272A] bg-[#18181B] p-6 shadow-sm flex flex-col justify-between space-y-4">
+        {/* AI Copilot Tools */}
+        <div className="rounded-xl border-2 border-[#1A1A1A] bg-white p-6 shadow-[4px_4px_0px_#1A1A1A] flex flex-col justify-between space-y-4">
           <div>
-            <div className="flex items-center justify-between pb-3 border-b border-[#27272A]">
-              <span className="text-xs font-semibold uppercase tracking-wider text-purple-400">
-                AI Copilot Tools
+            <div className="flex items-center justify-between pb-3 border-b-2 border-[#1A1A1A]">
+              <span className="text-xs font-black uppercase tracking-widest text-[#0F0F0F]">
+                Quick access
               </span>
-              <span className="text-[10px] text-[#A1A1AA]">Automations</span>
+              <span className="text-[10px] text-[#5A5A5A] font-medium">Workspace</span>
             </div>
 
-            <div className="space-y-3 pt-3">
-              {/* Tool 1 */}
-              <Link
-                href="/dashboard/resume"
-                className="group flex items-center justify-between p-2.5 rounded-xl border border-[#27272A] bg-[#27272A]/40 hover:bg-[#27272A] hover:border-purple-500/40 transition-all"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex size-8 items-center justify-center rounded-lg bg-purple-500/15 text-purple-400 border border-purple-500/30">
-                    <HugeiconsIcon icon={File02Icon} className="size-4" />
+            <div className="space-y-2.5 pt-4">
+              {[
+                {
+                  href: "/dashboard/jobs",
+                  icon: Briefcase02Icon,
+                  title: "Browse jobs",
+                  desc: "Explore current openings",
+                  color: "#6366F1",
+                },
+                {
+                  href: "/dashboard/status",
+                  icon: Task01Icon,
+                  title: "Application tracker",
+                  desc: "Review your saved roles",
+                  color: "#C5F135",
+                },
+              ].map((tool) => (
+                <Link
+                  key={tool.href}
+                  href={tool.href}
+                  className="group flex items-center justify-between p-2.5 rounded-lg border-2 border-[#1A1A1A] bg-[#F7F5EC] hover:bg-[#EDEBE0] hover:shadow-[2px_2px_0px_#1A1A1A] transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="flex size-8 items-center justify-center rounded-md border-2 border-[#1A1A1A]"
+                      style={{ backgroundColor: tool.color }}
+                    >
+                      <HugeiconsIcon icon={tool.icon} className="size-4 text-[#0F0F0F]" />
+                    </div>
+                    <div>
+                      <h4
+                        className="text-xs font-bold text-[#0F0F0F]"
+                        style={{ fontFamily: "'Playfair Display', serif" }}
+                      >
+                        {tool.title}
+                      </h4>
+                      <p className="text-[10px] text-[#5A5A5A] font-medium">{tool.desc}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-xs font-semibold text-[#FAFAFA] group-hover:text-purple-300 transition-colors">
-                      ATS Keyword Matcher
-                    </h4>
-                    <p className="text-[10px] text-[#A1A1AA]">Instant resume score</p>
-                  </div>
-                </div>
-                <HugeiconsIcon
-                  icon={ArrowRight01Icon}
-                  className="size-3.5 text-[#71717A] group-hover:text-[#FAFAFA] transition-colors"
-                />
-              </Link>
-
-              {/* Tool 2 */}
-              <Link
-                href="/dashboard/status"
-                className="group flex items-center justify-between p-2.5 rounded-xl border border-[#27272A] bg-[#27272A]/40 hover:bg-[#27272A] hover:border-indigo-500/40 transition-all"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex size-8 items-center justify-center rounded-lg bg-indigo-500/15 text-indigo-400 border border-indigo-500/30">
-                    <HugeiconsIcon icon={SparklesIcon} className="size-4" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-semibold text-[#FAFAFA] group-hover:text-indigo-300 transition-colors">
-                      Smart Cover Letter
-                    </h4>
-                    <p className="text-[10px] text-[#A1A1AA]">Custom hiring pitch</p>
-                  </div>
-                </div>
-                <HugeiconsIcon
-                  icon={ArrowRight01Icon}
-                  className="size-3.5 text-[#71717A] group-hover:text-[#FAFAFA] transition-colors"
-                />
-              </Link>
+                  <HugeiconsIcon
+                    icon={ArrowRight01Icon}
+                    className="size-3.5 text-[#5A5A5A] group-hover:text-[#0F0F0F] transition-colors"
+                  />
+                </Link>
+              ))}
             </div>
           </div>
 
-          <div className="rounded-2xl border border-purple-500/20 bg-purple-500/5 p-3 flex items-center justify-between">
-            <span className="text-[11px] text-[#A1A1AA]">Available Credits</span>
-            <span className="text-xs font-bold text-purple-400">75 / 100 Left</span>
+          <div className="rounded-md border border-[#1A1A1A]/15 bg-[#F7F5EC] p-3 flex items-center justify-between">
+            <span className="text-[11px] font-medium text-[#5A5A5A]">Tracked applications</span>
+            <span className="text-sm font-bold tabular-nums text-[#0F0F0F]">{totalCount}</span>
           </div>
-        </Card>
+        </div>
       </section>
 
-      {/* Applications Pipeline Card */}
-      <Card className="rounded-3xl border border-[#27272A] bg-[#18181B] shadow-sm overflow-hidden">
-        <CardHeader className="pb-3 border-b border-[#27272A] p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-base font-semibold text-[#FAFAFA]">
-                Application Pipeline
-              </CardTitle>
-              <CardDescription className="text-xs text-[#A1A1AA]">
-                Manage your active job applications and interview stages
-              </CardDescription>
-            </div>
-
-            <Button
-              render={<Link href="/dashboard/status" />}
-              size="sm"
-              variant="outline"
-              className="text-xs font-medium cursor-pointer rounded-xl border border-[#3F3F46] bg-[#27272A] text-[#FAFAFA] hover:bg-[#3F3F46]"
+      {/* ── Applications Pipeline ── */}
+      <div className="rounded-xl border-2 border-[#1A1A1A] bg-white shadow-[4px_4px_0px_#1A1A1A] overflow-hidden">
+        <div className="p-6 border-b-2 border-[#1A1A1A] flex items-center justify-between">
+          <div>
+            <h3
+              className="text-base font-black text-[#0F0F0F]"
+              style={{ fontFamily: "'Playfair Display', serif" }}
             >
-              View Pipeline
-            </Button>
+              Application Pipeline
+            </h3>
+            <p className="text-xs text-[#5A5A5A] font-medium">Active job applications & interview stages</p>
           </div>
-        </CardHeader>
 
-        <CardContent className="p-6">
+          <Button
+            render={<Link href="/dashboard/status" />}
+            size="sm"
+            className="text-xs font-bold cursor-pointer rounded-md border-2 border-[#1A1A1A] bg-[#E8E5D4] text-[#0F0F0F] hover:bg-[#DEDBD0] hover:shadow-[2px_2px_0px_#1A1A1A] transition-all"
+          >
+            View Pipeline
+          </Button>
+        </div>
+
+        <div className="p-6">
           {applications.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[#27272A] py-14 px-4 text-center bg-[#09090B]/50">
-              <div className="flex size-14 items-center justify-center rounded-2xl bg-purple-500/10 text-purple-400 border border-purple-500/25 mb-4 shadow-sm">
-                <HugeiconsIcon icon={Calendar03Icon} className="size-6" />
+            <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-[#1A1A1A] py-14 px-4 text-center bg-[#F7F5EC]">
+              <div className="flex size-14 items-center justify-center rounded-xl bg-[#C5F135] border-2 border-[#1A1A1A] mb-4 shadow-[3px_3px_0px_#1A1A1A]">
+                <HugeiconsIcon icon={Calendar03Icon} className="size-6 text-[#0F0F0F]" />
               </div>
-              <h3 className="text-sm font-semibold text-[#FAFAFA]">No active applications yet</h3>
-              <p className="text-xs text-[#A1A1AA] mt-1.5 max-w-sm">
-                Get started by clicking &ldquo;Track New Application&rdquo; or explore matched opportunities in the Jobs tab.
+              <h3
+                className="text-sm font-black text-[#0F0F0F]"
+                style={{ fontFamily: "'Playfair Display', serif" }}
+              >
+                No tracked applications yet
+              </h3>
+              <p className="text-xs text-[#5A5A5A] mt-1.5 max-w-sm font-medium">
+                Browse job openings and start an application to build your pipeline.
               </p>
               <div className="mt-5">
                 <Button
-                  render={<Link href="/dashboard/status" />}
+                  render={<Link href="/dashboard/jobs" />}
                   size="sm"
-                  className="gap-1.5 text-xs font-semibold cursor-pointer rounded-xl bg-gradient-to-r from-[#A855F7] to-[#7C3AED] hover:from-[#9333EA] hover:to-[#6D28D9] text-white shadow-md shadow-purple-500/20"
+                  className="gap-1.5 text-xs font-bold cursor-pointer rounded-md bg-[#0F0F0F] hover:bg-[#1A1A1A] text-white border-2 border-[#0F0F0F] shadow-[3px_3px_0px_#C5F135] hover:shadow-[1px_1px_0px_#C5F135] transition-all"
                 >
-                  <HugeiconsIcon icon={PlusSignIcon} className="size-3.5" />
-                  Track First Application
+                  <HugeiconsIcon icon={Briefcase02Icon} className="size-3.5" />
+                  Browse Jobs
                 </Button>
               </div>
             </div>
           ) : (
-            <div className="divide-y divide-[#27272A]">
+            <div className="divide-y-2 divide-[#1A1A1A]/10">
               {applications.map((app) => (
-                <div
-                  key={app.id}
-                  className="flex items-center justify-between py-4"
-                >
+                <div key={app.id} className="flex items-center justify-between py-4">
                   <div>
-                    <h4 className="text-sm font-semibold text-[#FAFAFA]">{app.job_title}</h4>
-                    <p className="text-xs text-[#A1A1AA]">{app.company_name} • {app.location || "Remote"}</p>
+                    <h4 className="text-sm font-bold text-[#0F0F0F]" style={{ fontFamily: "'Playfair Display', serif" }}>
+                      {app.job_title}
+                    </h4>
+                    <p className="text-xs text-[#5A5A5A] font-medium">
+                      {app.company_name} · {app.location || "Remote"}
+                    </p>
                   </div>
-                  <Badge variant="outline" className="capitalize text-[11px] border-[#3F3F46] text-[#FAFAFA]">
+                  <Badge
+                    variant="outline"
+                    className="capitalize text-[11px] border-2 border-[#1A1A1A] text-[#0F0F0F] font-bold bg-[#E8E5D4]"
+                  >
                     {app.status}
                   </Badge>
                 </div>
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
