@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { JobPlatform, JobItem } from "@/types/job";
+import { ALL_JOB_PLATFORMS, JobPlatform, JobItem } from "@/types/job";
+import { UserJobSearchProfile } from "@/lib/jobs/query";
+import { searchVerifiedJobs } from "@/lib/jobs/engine";
 import {
-  executeBraveJobSearch,
-  UserJobSearchProfile,
-} from "@/lib/jobs/brave";
+  extractSalaryFromText,
+  isInvalidCompanyName,
+  isLikelyDeadOrSpam,
+  isLikelyGeneratedDescription,
+  UNDISCLOSED_SALARY,
+} from "@/lib/jobs/metadata";
+import { filterLiveJobs } from "@/lib/jobs/verify";
 
-const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 Hours Caching TTL
+const CACHE_TTL_MS = 45 * 60 * 1000;
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,13 +34,7 @@ export async function POST(request: NextRequest) {
     // ------------------------------------------------------------------------
     const body = await request.json().catch(() => ({}));
     const forceRefresh = Boolean(body.forceRefresh);
-    const validPlatforms: JobPlatform[] = [
-      "greenhouse",
-      "lever",
-      "workable",
-      "wellfound",
-      "indeed",
-    ];
+    const validPlatforms: JobPlatform[] = ALL_JOB_PLATFORMS;
 
     const requestedPlatforms: JobPlatform[] =
       Array.isArray(body.platforms) && body.platforms.length > 0
@@ -42,9 +42,11 @@ export async function POST(request: NextRequest) {
             validPlatforms.includes(p as JobPlatform)
           )
         : validPlatforms;
+    let platformsToSearch = requestedPlatforms;
+    let hasUsableCache = false;
 
     // ------------------------------------------------------------------------
-    // 3. Check Supabase Cache (6 Hours)
+    // 3. Check Supabase Cache
     // ------------------------------------------------------------------------
     if (!forceRefresh) {
       const { data: cachedJobs, error: cacheErr } = await supabase
@@ -64,22 +66,45 @@ export async function POST(request: NextRequest) {
 
           if (isFresh) {
             // Filter by requested platforms
-            const filteredCached = cachedJobs.filter((j) =>
-              requestedPlatforms.includes(j.platform as JobPlatform)
+            const filteredCached = await filterLiveJobs(
+              cachedJobs.filter(
+                (j) =>
+                  requestedPlatforms.includes(j.platform as JobPlatform) &&
+                  !isInvalidCompanyName(j.company) &&
+                  Boolean(j.title?.trim()) &&
+                  Boolean(j.description?.trim()) &&
+                  !isLikelyGeneratedDescription(j.description) &&
+                  !isLikelyDeadOrSpam(j.title, j.description || "")
+              )
             );
 
-            console.log(
-              `[Jobs Cache] Serving ${filteredCached.length} cached jobs for user ${user.id} (Fetched ${new Date(
-                newest
-              ).toLocaleTimeString()})`
-            );
+            if (filteredCached.length > 0) {
+              const cachedPlatforms = new Set(
+                filteredCached.map((job) => job.platform as JobPlatform)
+              );
+              platformsToSearch = requestedPlatforms.filter(
+                (platform) => !cachedPlatforms.has(platform)
+              );
+              hasUsableCache = true;
 
-            return NextResponse.json({
-              success: true,
-              jobs: filteredCached as JobItem[],
-              cached: true,
-              fetched_at: new Date(newest).toISOString(),
-            });
+              if (platformsToSearch.length === 0) {
+                console.log(
+                  `[Jobs Cache] Serving ${filteredCached.length} verified cached jobs for user ${user.id} (Fetched ${new Date(
+                    newest
+                  ).toLocaleTimeString()})`
+                );
+
+                return NextResponse.json({
+                  success: true,
+                  jobs: filteredCached.map((job) => ({
+                    ...job,
+                    salary: extractSalaryFromText(job.description) || UNDISCLOSED_SALARY,
+                  })) as JobItem[],
+                  cached: true,
+                  fetched_at: new Date(newest).toISOString(),
+                });
+              }
+            }
           }
         }
       }
@@ -128,56 +153,45 @@ export async function POST(request: NextRequest) {
       full_name: profileData.full_name,
       headline: profileData.headline || "Software Engineer",
       location: profileData.location || "Remote",
-      skills:
-        skillsList.length > 0
-          ? skillsList
-          : ["React", "TypeScript", "Node.js"],
+      skills: skillsList,
       experience_level: computedLevel,
       job_type: jobType,
       target_roles: profileData.target_roles,
       experience_years: expYears,
     };
 
-    // ------------------------------------------------------------------------
-    // 6. Check Brave Search API Key
-    // ------------------------------------------------------------------------
     const braveApiKey = process.env.BRAVE_SEARCH_API_KEY?.trim();
 
-    if (!braveApiKey) {
-      console.error("[Brave Search] BRAVE_SEARCH_API_KEY is not configured.");
-      return NextResponse.json(
-        {
-          error:
-            "BRAVE_SEARCH_API_KEY is missing. Please configure your Brave Search API key in .env.local to search real job listings.",
-        },
-        { status: 400 }
-      );
-    }
-
     // ------------------------------------------------------------------------
-    // 7. Call Brave Search API for Each Platform
+    // 7. Fetch verified jobs from structured ATS/job-board APIs
     // ------------------------------------------------------------------------
     const allFetchedJobs: Omit<JobItem, "id" | "user_id" | "saved_status">[] = [];
     const searchErrors: string[] = [];
+    const successfullySearchedPlatforms: JobPlatform[] = [];
 
-    for (const platform of requestedPlatforms) {
-      try {
-        const platformJobs = await executeBraveJobSearch(
-          platform,
-          userSearchProfile,
-          braveApiKey
-        );
-        allFetchedJobs.push(...platformJobs);
-      } catch (err: any) {
-        console.error(`Error searching platform ${platform}:`, err.message);
-        searchErrors.push(`${platform}: ${err.message}`);
+    const platformResults = await Promise.allSettled(
+      platformsToSearch.map((platform) =>
+        searchVerifiedJobs(platform, userSearchProfile, braveApiKey)
+      )
+    );
+
+    platformResults.forEach((result, index) => {
+      const platform = platformsToSearch[index];
+      if (result.status === "fulfilled") {
+        successfullySearchedPlatforms.push(platform);
+        allFetchedJobs.push(...result.value);
+      } else {
+        const message =
+          result.reason instanceof Error ? result.reason.message : String(result.reason);
+        console.error(`Error searching platform ${platform}:`, message);
+        searchErrors.push(`${platform}: ${message}`);
       }
-    }
+    });
 
-    if (allFetchedJobs.length === 0 && searchErrors.length > 0) {
+    if (allFetchedJobs.length === 0 && searchErrors.length > 0 && !hasUsableCache) {
       return NextResponse.json(
         {
-          error: `Failed to search jobs via Brave API: ${searchErrors.join(
+          error: `Failed to search requested job providers: ${searchErrors.join(
             " | "
           )}`,
         },
@@ -203,22 +217,31 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Remove unsaved previous jobs to avoid stale duplicates
-    await supabase
-      .from("jobs")
-      .delete()
-      .eq("user_id", user.id)
-      .eq("saved_status", false);
+    // Replace only unsaved rows from providers that completed a fresh search.
+    if (successfullySearchedPlatforms.length > 0) {
+      await supabase
+        .from("jobs")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("saved_status", false)
+        .in("platform", successfullySearchedPlatforms);
+    }
 
     // Filter out duplicates within the fetched batch
     const uniqueBatch: typeof allFetchedJobs = [];
     const seenBatchUrls = new Set<string>();
 
     for (const job of allFetchedJobs) {
-      if (!seenBatchUrls.has(job.job_url)) {
-        seenBatchUrls.add(job.job_url);
-        uniqueBatch.push(job);
+      if (
+        !job.job_url ||
+        !job.title ||
+        isInvalidCompanyName(job.company) ||
+        seenBatchUrls.has(job.job_url)
+      ) {
+        continue;
       }
+      seenBatchUrls.add(job.job_url);
+      uniqueBatch.push(job);
     }
 
     const rowsToInsert = uniqueBatch.map((j) => ({
@@ -232,6 +255,7 @@ export async function POST(request: NextRequest) {
       job_type: j.job_type,
       experience_level: j.experience_level,
       description: j.description,
+      posted_at: j.posted_at || null,
       tags: j.tags,
       match_score: j.match_score,
       job_url: j.job_url,
@@ -247,7 +271,24 @@ export async function POST(request: NextRequest) {
         .insert(rowsToInsert);
 
       if (insertErr) {
-        console.error("Error inserting jobs into Supabase:", insertErr);
+        const isMissingPostedAtColumn =
+          /posted_at/i.test(insertErr.message || "") &&
+          ["42703", "PGRST204"].includes(insertErr.code || "");
+        if (isMissingPostedAtColumn) {
+          const rowsWithoutPostedAt = rowsToInsert.map((row) => {
+            const { posted_at, ...fallbackRow } = row;
+            void posted_at;
+            return fallbackRow;
+          });
+          const { error: fallbackInsertError } = await supabase
+            .from("jobs")
+            .insert(rowsWithoutPostedAt);
+          if (fallbackInsertError) {
+            console.error("Error inserting jobs into Supabase:", fallbackInsertError);
+          }
+        } else {
+          console.error("Error inserting jobs into Supabase:", insertErr);
+        }
       }
     }
 
@@ -264,9 +305,29 @@ export async function POST(request: NextRequest) {
       throw selectErr;
     }
 
+    const verifiedFinalJobs = await filterLiveJobs(
+      (finalJobs || []).filter(
+        (job) =>
+          !isInvalidCompanyName(job.company) &&
+          Boolean(job.title?.trim()) &&
+          Boolean(job.description?.trim()) &&
+          !isLikelyGeneratedDescription(job.description) &&
+          !isLikelyDeadOrSpam(job.title, job.description || "")
+      )
+    );
+    const currentSalaryByUrl = new Map(
+      allFetchedJobs.map((job) => [job.job_url, job.salary || UNDISCLOSED_SALARY])
+    );
+
     return NextResponse.json({
       success: true,
-      jobs: (finalJobs || []) as JobItem[],
+      jobs: verifiedFinalJobs.map((job) => ({
+        ...job,
+        salary:
+          currentSalaryByUrl.get(job.job_url) ||
+          extractSalaryFromText(job.description) ||
+          UNDISCLOSED_SALARY,
+      })) as JobItem[],
       cached: false,
       fetched_at: new Date().toISOString(),
       errors: searchErrors.length > 0 ? searchErrors : undefined,
