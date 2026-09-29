@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { POST as searchJobs } from "./search/route";
+import { ALL_JOB_PLATFORMS } from "@/types/job";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -7,7 +8,7 @@ export async function GET(request: NextRequest) {
   const platformsParam = searchParams.get("platforms");
   const platforms = platformsParam
     ? platformsParam.split(",").filter(Boolean)
-    : ["greenhouse", "lever", "workable", "wellfound"];
+    : ALL_JOB_PLATFORMS;
 
   // Re-route to searchJobs handler with synthetic request
   const searchRequest = new NextRequest(
