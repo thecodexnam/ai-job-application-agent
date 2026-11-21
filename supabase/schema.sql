@@ -49,7 +49,8 @@ begin
     coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', ''),
     new.email,
     coalesce(new.raw_user_meta_data->>'avatar_url', new.raw_user_meta_data->>'picture', '')
-  );
+  )
+  on conflict (id) do nothing;
   return new;
 end;
 $$;
@@ -118,6 +119,21 @@ create table if not exists public.job_applications (
   cover_letter text,
   notes text,
   match_score numeric check (match_score >= 0 and match_score <= 100),
+  job_id uuid references public.jobs(id) on delete set null,
+  platform text default 'generic',
+  application_mode text default 'manual' check (application_mode in ('manual', 'automated')),
+  application_status text default 'PENDING',
+  missing_fields jsonb default '[]'::jsonb,
+  browser_session_id text,
+  live_debug_url text,
+  current_step text,
+  form_data jsonb default '{}'::jsonb,
+  error_message text,
+  confirmation_details text,
+  retry_count integer default 0 not null,
+  last_retry_at timestamptz,
+  processing_started_at timestamptz,
+  submission_confirmed_at timestamptz,
   created_at timestamptz default now() not null,
   updated_at timestamptz default now() not null
 );
@@ -129,6 +145,18 @@ alter table public.job_applications enable row level security;
 create index if not exists idx_job_applications_user_id on public.job_applications(user_id);
 create index if not exists idx_job_applications_user_status on public.job_applications(user_id, status);
 create index if not exists idx_job_applications_tailored_resume_id on public.job_applications(tailored_resume_id);
+create index if not exists idx_job_applications_job_id on public.job_applications(job_id);
+
+-- Sequential concurrency lock index (ensures 1 active automated application per user)
+create unique index if not exists idx_job_applications_one_active_automated
+  on public.job_applications (user_id)
+  where application_mode = 'automated'
+    and application_status in (
+      'PENDING',
+      'IN_PROGRESS',
+      'MISSING_PROFILE_INFO',
+      'NEEDS_USER_ACTION'
+    );
 
 create policy "Users can view own applications" 
   on public.job_applications for select 
@@ -140,11 +168,87 @@ create policy "Users can insert own applications"
 
 create policy "Users can update own applications" 
   on public.job_applications for update 
-  using ((select auth.uid()) = user_id);
+  to authenticated
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
 
 create policy "Users can delete own applications" 
   on public.job_applications for delete 
   using ((select auth.uid()) = user_id);
+
+-- ==============================================================================
+-- 5. Application Form Fields Table (Detected form fields per application)
+-- ==============================================================================
+create table if not exists public.application_form_fields (
+  id uuid default gen_random_uuid() primary key,
+  application_id uuid references public.job_applications(id) on delete cascade not null,
+  field_key text not null,
+  label text not null,
+  field_type text not null,
+  required boolean not null default false,
+  options jsonb default '[]'::jsonb,
+  profile_mapping text,
+  selector text,
+  platform text,
+  created_at timestamptz default now() not null,
+  updated_at timestamptz default now() not null,
+  unique (application_id, field_key)
+);
+
+alter table public.application_form_fields enable row level security;
+
+create index if not exists idx_application_form_fields_application_id
+  on public.application_form_fields (application_id);
+
+create policy "Users can view own application form fields"
+  on public.application_form_fields for select to authenticated
+  using (
+    exists (
+      select 1 from public.job_applications a
+      where a.id = application_form_fields.application_id
+        and a.user_id = (select auth.uid())
+    )
+  );
+
+create policy "Users can insert own application form fields"
+  on public.application_form_fields for insert to authenticated
+  with check (
+    exists (
+      select 1 from public.job_applications a
+      where a.id = application_form_fields.application_id
+        and a.user_id = (select auth.uid())
+    )
+  );
+
+create policy "Users can update own application form fields"
+  on public.application_form_fields for update to authenticated
+  using (
+    exists (
+      select 1 from public.job_applications a
+      where a.id = application_form_fields.application_id
+        and a.user_id = (select auth.uid())
+    )
+  )
+  with check (
+    exists (
+      select 1 from public.job_applications a
+      where a.id = application_form_fields.application_id
+        and a.user_id = (select auth.uid())
+    )
+  );
+
+create policy "Users can delete own application form fields"
+  on public.application_form_fields for delete to authenticated
+  using (
+    exists (
+      select 1 from public.job_applications a
+      where a.id = application_form_fields.application_id
+        and a.user_id = (select auth.uid())
+    )
+  );
+
+grant select, insert, update, delete on public.application_form_fields to authenticated;
+grant all on public.application_form_fields to service_role;
 
 -- ==============================================================================
 -- 5. Updated At Trigger Function

@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -37,27 +36,27 @@ export function PlaceholderPage({
   return (
     <div className="space-y-6 animate-in fade-in-50 duration-300 pb-8">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-[#27272A]">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-[#1A1A1A]/15">
         <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-[#FAFAFA]">
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#171914]">
               {title}
             </h1>
             <Badge
               variant="outline"
-              className="gap-1.5 border-purple-500/30 bg-purple-500/15 text-purple-300 text-[11px] font-semibold rounded-full"
+              className="gap-1.5 border border-[#9FB944] bg-[#DDF19B] text-[#1B2710] text-[10px] font-bold uppercase tracking-wider rounded-md px-2 py-0.5"
             >
-              <HugeiconsIcon icon={SparklesIcon} className="size-3 text-purple-400" />
+              <HugeiconsIcon icon={SparklesIcon} className="size-3 text-[#1B2710]" />
               {badge}
             </Badge>
           </div>
-          <p className="text-sm text-[#A1A1AA]">{description}</p>
+          <p className="text-xs sm:text-sm text-[#5A5D55] max-w-2xl">{description}</p>
         </div>
 
         {actionText && (
           <Button
             size="sm"
-            className="gap-1.5 text-xs font-semibold cursor-pointer w-fit rounded-xl bg-gradient-to-r from-[#A855F7] to-[#7C3AED] hover:from-[#9333EA] hover:to-[#6D28D9] text-white shadow-lg shadow-purple-500/25 px-4 py-2"
+            className="gap-2 text-xs font-semibold cursor-pointer w-fit rounded-md bg-[#172013] hover:bg-[#26321E] text-white transition-all px-3.5 h-9"
           >
             <HugeiconsIcon icon={PlusSignIcon} className="size-3.5" />
             {actionText}
@@ -71,16 +70,16 @@ export function PlaceholderPage({
           {features.map((feat, idx) => (
             <Card
               key={idx}
-              className="rounded-2xl border border-[#27272A] bg-[#18181B] shadow-sm hover:border-purple-500/40 transition-all duration-200"
+              className="rounded-lg border border-[#1A1A1A]/15 bg-white transition-all"
             >
               <CardHeader className="p-4 pb-2">
-                <CardTitle className="text-sm font-semibold text-[#FAFAFA] flex items-center gap-2">
-                  <span className="size-1.5 rounded-full bg-purple-500" />
+                <CardTitle className="text-xs font-bold text-[#171914] flex items-center gap-2 uppercase tracking-wide">
+                  <span className="size-1.5 rounded-full bg-[#172013]" />
                   {feat.title}
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-4 pt-0">
-                <p className="text-xs text-[#A1A1AA] leading-relaxed">{feat.desc}</p>
+                <p className="text-xs text-[#5A5D55] leading-relaxed font-sans">{feat.desc}</p>
               </CardContent>
             </Card>
           ))}
@@ -88,23 +87,22 @@ export function PlaceholderPage({
       )}
 
       {/* Empty State / Coming Next */}
-      <Card className="rounded-3xl border border-dashed border-[#27272A] bg-[#18181B]/60 backdrop-blur-sm">
-        <CardContent className="flex flex-col items-center justify-center py-16 px-4 text-center">
-          <div className="flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-500/20 via-indigo-500/10 to-transparent text-purple-400 border border-purple-500/30 mb-4 shadow-lg shadow-purple-500/15">
-            <HugeiconsIcon icon={icon} className="size-8" />
+      <Card className="rounded-lg border border-dashed border-[#1A1A1A]/20 bg-[#F7F6F0]">
+        <CardContent className="flex flex-col items-center justify-center py-14 px-4 text-center">
+          <div className="flex size-12 items-center justify-center rounded-lg bg-[#DDF19B] text-[#171914] border border-[#9FB944] mb-3">
+            <HugeiconsIcon icon={icon} className="size-6" />
           </div>
-          <h3 className="text-base font-semibold text-[#FAFAFA]">{emptyTitle}</h3>
-          <p className="text-xs sm:text-sm text-[#A1A1AA] mt-1.5 max-w-md">
+          <h3 className="text-sm font-bold text-[#171914]">{emptyTitle}</h3>
+          <p className="text-xs text-[#5A5D55] mt-1.5 max-w-md leading-relaxed">
             {emptyDescription}
           </p>
           {actionText && (
-            <div className="mt-6">
+            <div className="mt-5">
               <Button
-                variant="outline"
                 size="sm"
-                className="text-xs cursor-pointer gap-2 rounded-xl border border-[#3F3F46] bg-[#27272A] hover:bg-[#3F3F46] text-[#FAFAFA]"
+                className="text-xs font-semibold cursor-pointer gap-2 rounded-md bg-[#172013] hover:bg-[#26321E] text-white h-9 px-4 transition-all"
               >
-                <HugeiconsIcon icon={SparklesIcon} className="size-3 text-purple-400" />
+                <HugeiconsIcon icon={SparklesIcon} className="size-3 text-[#DDF19B]" />
                 <span>{actionText}</span>
               </Button>
             </div>

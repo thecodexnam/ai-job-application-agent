@@ -1,31 +1,38 @@
 import React from "react";
-import { PlaceholderPage } from "@/components/dashboard/placeholder-page";
-import { Task01Icon } from "@hugeicons/core-free-icons";
+import { redirect } from "next/navigation";
+import { ApplicationTracker } from "@/components/dashboard/application-tracker";
+import { createClient } from "@/lib/supabase/server";
+import type { TrackedApplication } from "@/components/dashboard/application-tracker";
 
-export default function StatusPage() {
+export const metadata = {
+  title: "Application Status | JobBuddy AI",
+  description: "Track your job applications, stages, notes, and interviews in real time.",
+};
+
+export default async function StatusPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login?next=/dashboard/status");
+
+  const { data, error } = await supabase
+    .from("job_applications")
+    .select("id, job_title, company_name, job_url, location, status, created_at, applied_at, notes, platform, application_mode, application_status, browser_session_id, live_debug_url, missing_fields, current_step, error_message, confirmation_details, retry_count")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  const applications: TrackedApplication[] = data || [];
+
   return (
-    <PlaceholderPage
-      title="Application Status & Tracker"
-      badge="Live Pipeline"
-      description="Monitor active applications across every pipeline stage: Wishlist, Applied, Interviewing, and Offers."
-      icon={Task01Icon}
-      emptyTitle="No applications in pipeline"
-      emptyDescription="Track your first job application from the Jobs page or manually enter an active application to begin tracking its timeline."
-      actionText="Track New Application"
-      features={[
-        {
-          title: "Kanban & Pipeline View",
-          desc: "Visual drag-and-drop board to advance applications through interview stages.",
-        },
-        {
-          title: "Email & Calendar Sync",
-          desc: "Automatically sync interview invites and recruiter follow-ups to your calendar.",
-        },
-        {
-          title: "Offer Comparison",
-          desc: "Compare base pay, equity, bonuses, and perks side-by-side once offers arrive.",
-        },
-      ]}
-    />
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-4">
+      {error && (
+        <p role="alert" className="border-l-4 border-rose-600 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-800 rounded-md">
+          Applications could not be loaded. Refresh the page to try again.
+        </p>
+      )}
+      <ApplicationTracker initialApplications={applications} />
+    </div>
   );
 }

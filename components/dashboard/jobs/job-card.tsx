@@ -2,25 +2,30 @@
 
 import React from "react";
 import { JobItem, PLATFORMS_CONFIG } from "@/types/job";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { PlatformLogo } from "./platform-logo";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Bookmark01Icon,
   Bookmark02Icon,
+  ArrowUpRight01Icon,
+  EyeIcon,
   Location01Icon,
   Coins01Icon,
   Briefcase02Icon,
   Clock01Icon,
-  Wifi01Icon,
+  SparklesIcon,
 } from "@hugeicons/core-free-icons";
 
 interface JobCardProps {
   job: JobItem;
   onViewDetails: (job: JobItem) => void;
   onToggleSave: (jobId: string, currentSaved: boolean) => void;
+  onApply?: (job: JobItem) => void;
 }
 
-export function JobCard({ job, onViewDetails, onToggleSave }: JobCardProps) {
+export function JobCard({ job, onViewDetails, onToggleSave, onApply }: JobCardProps) {
   const platformConfig = PLATFORMS_CONFIG[job.platform] || PLATFORMS_CONFIG.greenhouse;
 
   const getInitials = (name: string) => {
@@ -32,224 +37,184 @@ export function JobCard({ job, onViewDetails, onToggleSave }: JobCardProps) {
       .toUpperCase();
   };
 
-  const formatPostedTime = (dateString?: string) => {
-    if (!dateString) return "Posted recently";
-    try {
-      const diffMs = Date.now() - new Date(dateString).getTime();
-      const diffMins = Math.floor(diffMs / 60000);
-      if (diffMins < 1) return "Posted just now";
-      if (diffMins < 60) return `Posted ${diffMins} minute${diffMins === 1 ? "" : "s"} ago`;
-      const diffHours = Math.floor(diffMins / 60);
-      if (diffHours < 24) return `Posted ${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
-      const diffDays = Math.floor(diffHours / 24);
-      if (diffDays === 1) return "Posted yesterday";
-      return `Posted ${diffDays} days ago`;
-    } catch {
-      return "Posted recently";
-    }
-  };
-
-  // Match score info — using app's purple/indigo theme
-  const getMatchInfo = (score: number) => {
-    if (score >= 85) {
-      return {
-        label: "Top match",
-        textColor: "text-violet-400",
-        barGradient: "bg-gradient-to-r from-violet-500 to-purple-500",
-      };
-    }
-    if (score >= 75) {
-      return {
-        label: "Great match",
-        textColor: "text-indigo-400",
-        barGradient: "bg-gradient-to-r from-indigo-500 to-violet-500",
-      };
-    }
-    if (score >= 60) {
-      return {
-        label: "Potential match",
-        textColor: "text-purple-400",
-        barGradient: "bg-gradient-to-r from-purple-500 to-indigo-400",
-      };
-    }
-    return {
-      label: "Fair match",
-      textColor: "text-zinc-400",
-      barGradient: "bg-zinc-600",
-    };
-  };
-
-  const matchInfo = getMatchInfo(job.match_score);
-
   return (
-    <div className="group relative bg-[#18181B] hover:bg-[#1a1924] border border-zinc-800/80 hover:border-purple-500/20 rounded-3xl p-5 sm:p-6 transition-all duration-200 shadow-sm hover:shadow-xl hover:shadow-purple-500/5">
-      {/* Subtle top accent line on hover */}
-      <div className="absolute inset-x-0 top-0 h-px opacity-0 group-hover:opacity-100 transition-opacity rounded-t-3xl bg-gradient-to-r from-transparent via-purple-500/60 to-transparent" />
-
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 lg:gap-6">
-
-        {/* ==================================================================== */}
-        {/* LEFT SECTION: Company Logo + Job Details & Metadata                  */}
-        {/* ==================================================================== */}
-        <div className="flex items-start gap-4 sm:gap-5 flex-1 min-w-0">
-
-          {/* Company Logo Box */}
-          <button
-            type="button"
-            onClick={() => onViewDetails(job)}
-            className="size-16 sm:size-[72px] rounded-2xl bg-zinc-900/90 border border-zinc-800 group-hover:border-zinc-700 p-2 flex items-center justify-center shrink-0 shadow-sm cursor-pointer hover:border-purple-500/30 transition-colors"
-          >
+    <article className="group rounded-lg border border-[#1A1A1A]/15 bg-white p-4 sm:p-5 hover:border-[#1A1A1A]/35 transition-colors">
+      <div className="space-y-3.5">
+        {/* Top row: Logo, Company, Title, Badges */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 items-start gap-3.5">
             {job.company_logo ? (
-              <img
-                src={job.company_logo}
-                alt={job.company}
-                onError={(e) => {
-                  (e.target as HTMLElement).style.display = "none";
-                }}
-                className="size-full object-contain rounded-xl"
-              />
+              <div className="relative shrink-0">
+                <img
+                  src={job.company_logo}
+                  alt={job.company}
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = "none";
+                  }}
+                  className="size-11 rounded-lg border border-[#1A1A1A]/15 bg-white p-1 object-contain"
+                />
+                <div className="absolute -bottom-1 -right-1 ring-2 ring-white rounded-full">
+                  <PlatformLogo platform={job.platform} size="xs" />
+                </div>
+              </div>
             ) : (
-              <div
-                className="size-full rounded-xl flex items-center justify-center font-bold text-base border"
-                style={{
-                  backgroundColor: `${platformConfig.accentColor}15`,
-                  color: platformConfig.accentColor,
-                  borderColor: `${platformConfig.accentColor}30`,
-                }}
-              >
-                {getInitials(job.company)}
+              <div className="relative shrink-0">
+                <div
+                  className="flex size-11 items-center justify-center rounded-lg border border-[#1A1A1A]/15 text-sm font-bold"
+                  style={{
+                    backgroundColor: `${platformConfig.accentColor}20`,
+                    color: "#171914",
+                  }}
+                >
+                  {getInitials(job.company)}
+                </div>
+                <div className="absolute -bottom-1 -right-1 ring-2 ring-white rounded-full">
+                  <PlatformLogo platform={job.platform} size="xs" />
+                </div>
               </div>
             )}
-          </button>
 
-          {/* Details */}
-          <div className="space-y-2 min-w-0 flex-1">
-            {/* Company + Platform badge */}
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <span className="text-sm sm:text-base font-bold text-violet-400 tracking-tight">
-                {job.company}
-              </span>
-
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-zinc-700/80 bg-zinc-900/80 text-[11px] font-medium text-zinc-300">
-                <PlatformLogo platform={job.platform} size="xs" />
-                <span>{platformConfig.name}</span>
-              </span>
-            </div>
-
-            {/* Job Title */}
-            <h3
-              onClick={() => onViewDetails(job)}
-              className="text-base sm:text-lg font-bold text-[#FAFAFA] tracking-tight hover:text-violet-300 transition-colors cursor-pointer line-clamp-1"
-            >
-              {job.title}
-            </h3>
-
-            {/* Metadata row */}
-            <div className="flex items-center gap-3.5 sm:gap-4 text-xs text-zinc-400 flex-wrap pt-0.5">
-              <span className="flex items-center gap-1.5">
-                <HugeiconsIcon icon={Wifi01Icon} className="size-3.5 text-zinc-500 shrink-0" />
-                <span>{job.job_type || "On-site"}</span>
-              </span>
-
-              <span className="flex items-center gap-1.5">
-                <HugeiconsIcon icon={Briefcase02Icon} className="size-3.5 text-zinc-500 shrink-0" />
-                <span>{job.experience_level || "Mid-level"}</span>
-              </span>
-
-              <span className="flex items-center gap-1.5">
-                <HugeiconsIcon icon={Location01Icon} className="size-3.5 text-zinc-500 shrink-0" />
-                <span>{job.location || "Remote"}</span>
-              </span>
-
-              {job.salary && (
-                <span className="flex items-center gap-1.5 font-medium text-emerald-400">
-                  <HugeiconsIcon icon={Coins01Icon} className="size-3.5 shrink-0" />
-                  <span>{job.salary}</span>
+            <div className="min-w-0 space-y-0.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="truncate text-xs font-semibold text-[#5A5D55]">
+                  {job.company}
                 </span>
-              )}
-            </div>
 
-            {/* Skill Tags */}
-            {job.tags && job.tags.length > 0 && (
-              <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                {job.tags.slice(0, 4).map((tag) => (
-                  <span
-                    key={tag}
-                    className="text-xs font-medium px-2.5 py-0.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 group-hover:border-zinc-700/80 transition-colors"
-                  >
-                    {tag}
-                  </span>
-                ))}
-                {job.tags.length > 4 && (
-                  <span className="text-[11px] text-zinc-500 font-medium pl-1">
-                    +{job.tags.length - 4} more
-                  </span>
-                )}
+                <Badge
+                  variant="outline"
+                  className={`flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-[9px] font-semibold border ${platformConfig.badgeBorder} ${platformConfig.badgeBg} ${platformConfig.badgeText}`}
+                >
+                  <PlatformLogo platform={job.platform} size="xs" />
+                  <span>{platformConfig.name}</span>
+                </Badge>
               </div>
-            )}
-          </div>
-        </div>
 
-        {/* ==================================================================== */}
-        {/* RIGHT SECTION: Match Score + Action Buttons                          */}
-        {/* ==================================================================== */}
-        <div className="flex flex-col sm:flex-row lg:flex-row items-start sm:items-center justify-between lg:justify-end gap-5 sm:gap-6 pt-3 sm:pt-0 border-t sm:border-t-0 border-zinc-800/60 shrink-0">
-
-          {/* Match Score Block */}
-          <div className="space-y-1.5 shrink-0 min-w-[150px]">
-            <div className={`text-sm sm:text-base font-bold ${matchInfo.textColor}`}>
-              {job.match_score}% Match
-            </div>
-
-            {/* Progress bar */}
-            <div className="w-36 sm:w-40 h-1.5 rounded-full bg-zinc-800 overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all duration-500 ${matchInfo.barGradient}`}
-                style={{ width: `${Math.min(100, Math.max(8, job.match_score))}%` }}
-              />
-            </div>
-
-            <div className={`text-xs font-semibold ${matchInfo.textColor}`}>
-              {matchInfo.label}
-            </div>
-
-            <div className="flex items-center gap-1.5 text-[11px] text-zinc-500 pt-0.5">
-              <HugeiconsIcon icon={Clock01Icon} className="size-3 shrink-0" />
-              <span>{formatPostedTime(job.fetched_at || job.created_at)}</span>
+              <h3 className="line-clamp-2 text-base font-bold leading-snug text-[#171914]">
+                {job.title}
+              </h3>
             </div>
           </div>
 
-          {/* Action Buttons: Apply Now (purple) + Save */}
-          <div className="flex sm:flex-col items-center gap-2.5 w-full sm:w-auto shrink-0">
-            <a
-              href={job.job_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 sm:flex-initial w-full sm:w-36 h-10 px-5 rounded-xl bg-purple-600 hover:bg-purple-500 active:scale-[0.98] text-white font-bold text-xs sm:text-sm transition-all shadow-md shadow-purple-500/20 flex items-center justify-center gap-1.5 cursor-pointer text-center select-none"
+          {/* Match score & save toggle */}
+          <div className="flex items-center gap-2 shrink-0">
+            <Badge
+              className={`flex items-center gap-1 rounded-md px-2.5 py-1 text-[10px] font-semibold ${
+                job.match_score >= 90
+                  ? "bg-[#DDF19B] border border-[#9FB944] text-[#1B2710]"
+                  : job.match_score >= 80
+                  ? "bg-[#EEF2FF] border border-indigo-200 text-[#4338CA]"
+                  : "bg-[#EDEBE0] border border-[#1A1A1A]/15 text-[#171914]"
+              }`}
             >
-              <span>Apply Now</span>
-            </a>
+              <HugeiconsIcon icon={SparklesIcon} className="size-3" />
+              <span>{job.match_score}% Match</span>
+            </Badge>
 
             <button
               type="button"
               onClick={() => onToggleSave(job.id, job.saved_status)}
-              className={`flex-1 sm:flex-initial w-full sm:w-36 h-10 px-5 rounded-xl border font-semibold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer select-none ${
+              title={job.saved_status ? "Remove from saved" : "Save job"}
+              className={`flex size-8 items-center justify-center rounded-md border transition-colors cursor-pointer ${
                 job.saved_status
-                  ? "bg-amber-500/15 border-amber-500/30 text-amber-300 hover:bg-amber-500/25"
-                  : "bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800/80 hover:border-zinc-700"
+                  ? "border-[#9FB944] bg-[#DDF19B] text-[#1B2710]"
+                  : "border-[#1A1A1A]/20 bg-white text-[#5A5D55] hover:bg-[#F2F0E8] hover:text-[#171914]"
               }`}
             >
               <HugeiconsIcon
                 icon={job.saved_status ? Bookmark02Icon : Bookmark01Icon}
-                className={`size-4 ${job.saved_status ? "text-amber-400" : "text-zinc-400"}`}
+                className="size-4"
               />
-              <span>{job.saved_status ? "Saved" : "Save"}</span>
             </button>
           </div>
-
         </div>
 
+        {/* Role metadata pills */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-medium text-[#5A5D55]">
+          <span className="inline-flex items-center gap-1.5">
+            <HugeiconsIcon icon={Location01Icon} className="size-3.5 text-[#687064]" />
+            <span className="text-[#171914]">{job.location || "Remote / Disclosed on site"}</span>
+          </span>
+          <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-800">
+            <HugeiconsIcon icon={Coins01Icon} className="size-3.5 text-emerald-700" />
+            <span>{job.salary || "Salary on site"}</span>
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <HugeiconsIcon icon={Briefcase02Icon} className="size-3.5 text-[#687064]" />
+            <span>{job.job_type || "Full-time"}</span>
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <HugeiconsIcon icon={Clock01Icon} className="size-3.5 text-[#687064]" />
+            <span>{job.posted_at ? new Date(job.posted_at).toLocaleDateString() : "Recently active"}</span>
+          </span>
+        </div>
+
+        {/* Description snippet */}
+        {job.description && (
+          <p className="line-clamp-2 text-xs leading-relaxed text-[#5A5D55]">
+            {job.description}
+          </p>
+        )}
+
+        {/* Skill tags */}
+        {job.tags && job.tags.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+            {job.tags.slice(0, 6).map((tag) => (
+              <span
+                key={tag}
+                className="rounded-md border border-[#1A1A1A]/10 bg-[#F7F6F0] px-2 py-0.5 text-[10px] font-medium text-[#171914]"
+              >
+                {tag}
+              </span>
+            ))}
+            {job.tags.length > 6 && (
+              <span className="text-[10px] text-[#687064] font-medium px-1">
+                +{job.tags.length - 6} more
+              </span>
+            )}
+          </div>
+        )}
       </div>
-    </div>
+
+      {/* Action Buttons: View Job, Apply Now, Save */}
+      <div className="flex items-center justify-between gap-3 border-t border-[#1A1A1A]/10 pt-3 mt-3.5">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onViewDetails(job)}
+          className="h-8.5 gap-1.5 rounded-md border border-[#1A1A1A]/20 bg-white px-3 text-xs font-semibold text-[#171914] hover:bg-[#F2F0E8] cursor-pointer"
+        >
+          <HugeiconsIcon icon={EyeIcon} className="size-3.5 text-[#687064]" />
+          <span>View Details</span>
+        </Button>
+
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onToggleSave(job.id, job.saved_status)}
+            className={`h-8.5 gap-1.5 rounded-md border px-2.5 text-xs font-semibold cursor-pointer ${
+              job.saved_status
+                ? "bg-[#DDF19B] border-[#9FB944] text-[#1B2710]"
+                : "bg-white border-[#1A1A1A]/20 text-[#5A5D55] hover:bg-[#F2F0E8] hover:text-[#171914]"
+            }`}
+          >
+            <HugeiconsIcon
+              icon={job.saved_status ? Bookmark02Icon : Bookmark01Icon}
+              className={`size-3.5 ${job.saved_status ? "text-[#1B2710]" : "text-[#5A5D55]"}`}
+            />
+            <span>{job.saved_status ? "Saved" : "Save"}</span>
+          </Button>
+
+          <Button
+            size="sm"
+            onClick={() => (onApply ? onApply(job) : window.open(job.job_url, "_blank"))}
+            className="h-8.5 gap-1.5 rounded-md border border-[#9FB944] bg-[#DDF19B] px-3.5 text-xs font-bold text-[#1B2710] hover:bg-[#CFEA78] transition-colors cursor-pointer"
+          >
+            <span>Open Job URL to Apply</span>
+            <HugeiconsIcon icon={ArrowUpRight01Icon} className="size-3.5" />
+          </Button>
+        </div>
+      </div>
+    </article>
   );
 }

@@ -1,4 +1,21 @@
-export type JobPlatform = "greenhouse" | "lever" | "workable" | "wellfound";
+export type JobPlatform =
+  | "greenhouse"
+  | "lever"
+  | "workable"
+  | "wellfound"
+  | "indeed"
+  | "remotive"
+  | "arbeitnow";
+
+export const ALL_JOB_PLATFORMS: JobPlatform[] = [
+  "greenhouse",
+  "lever",
+  "workable",
+  "wellfound",
+  "indeed",
+  "remotive",
+  "arbeitnow",
+];
 
 export interface JobItem {
   id: string;
@@ -19,6 +36,7 @@ export interface JobItem {
   application_status: string;
   saved_status: boolean;
   fetched_at: string;
+  posted_at?: string | null;
   created_at: string;
 }
 
@@ -88,5 +106,45 @@ export const PLATFORMS_CONFIG: Record<JobPlatform, PlatformConfig> = {
     accentColor: "#F43F5E",
     description: "Venture-backed startups, early-stage equity roles & tech teams.",
     logoUrl: "/platforms/wellfound.svg",
+  },
+  indeed: {
+    id: "indeed",
+    name: "Indeed",
+    domain: "indeed.com",
+    siteQuery: "site:indeed.com/viewjob OR site:indeed.com/rc/clk OR site:indeed.com/job",
+    badgeBg: "bg-blue-600/10",
+    badgeBorder: "border-blue-600/25",
+    badgeText: "text-blue-500",
+    iconBg: "bg-blue-600/20",
+    accentColor: "#2164F3",
+    description: "World's #1 hiring network with millions of verified enterprise & startup listings.",
+    logoUrl: "/platforms/indeed.svg",
+  },
+  remotive: {
+    id: "remotive",
+    name: "Remotive",
+    domain: "remotive.com",
+    siteQuery: "site:remotive.com/remote-jobs",
+    badgeBg: "bg-indigo-500/10",
+    badgeBorder: "border-indigo-500/25",
+    badgeText: "text-indigo-400",
+    iconBg: "bg-indigo-500/20",
+    accentColor: "#6366F1",
+    description:
+      "Verified remote roles with exact company, title, location, and apply links from Remotive's public API.",
+    logoUrl: "/platforms/remotive.svg",
+  },
+  arbeitnow: {
+    id: "arbeitnow",
+    name: "Arbeitnow",
+    domain: "arbeitnow.com",
+    siteQuery: "site:arbeitnow.com/jobs",
+    badgeBg: "bg-amber-500/10",
+    badgeBorder: "border-amber-500/25",
+    badgeText: "text-amber-600",
+    iconBg: "bg-amber-500/20",
+    accentColor: "#F59E0B",
+    description: "Live European and remote tech jobs from Arbeitnow's structured job-board API.",
+    logoUrl: "/platforms/arbeitnow.svg",
   },
 };

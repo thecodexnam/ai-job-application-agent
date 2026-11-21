@@ -76,22 +76,25 @@ function LoginFormContent() {
   };
 
   return (
-    <Card className="w-full border-border/80 bg-card/70 backdrop-blur-xl shadow-2xl">
-      <CardHeader className="text-center pb-2">
-        <CardTitle className="text-2xl font-bold tracking-tight text-foreground">
-          Welcome back
+    <Card className="w-full border border-[#1A1A1A]/15 bg-white rounded-lg shadow-sm">
+      <CardHeader className="text-center pb-3 pt-6 px-6">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-[#687064] mb-1">
+          Authentication
+        </span>
+        <CardTitle className="text-xl font-bold tracking-tight text-[#171914]">
+          Welcome Back
         </CardTitle>
-        <CardDescription className="text-xs text-muted-foreground">
+        <CardDescription className="text-xs text-[#5A5D55] mt-1">
           Sign in to access your automated job application agent
         </CardDescription>
       </CardHeader>
 
-      <CardContent className="space-y-4 pt-2">
+      <CardContent className="space-y-4 pt-1 px-6 sm:px-8">
         {/* Error Alert */}
         {errorMessage && (
-          <Alert variant="destructive" className="py-2.5 px-3 text-xs">
-            <HugeiconsIcon icon={AlertCircleIcon} className="size-4 shrink-0" />
-            <AlertDescription className="ml-1 leading-relaxed">
+          <Alert variant="destructive" className="py-2.5 px-3 text-xs border border-red-200 bg-red-50 text-red-700 rounded-md">
+            <HugeiconsIcon icon={AlertCircleIcon} className="size-4 shrink-0 text-red-600" />
+            <AlertDescription className="ml-1 font-semibold leading-relaxed">
               {errorMessage}
             </AlertDescription>
           </Alert>
@@ -101,9 +104,9 @@ function LoginFormContent() {
         <GoogleButton label="Continue with Google" next={next} />
 
         {/* Divider */}
-        <div className="relative my-4">
-          <Separator />
-          <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+        <div className="relative my-3">
+          <Separator className="bg-[#1A1A1A]/15" />
+          <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-2.5 text-[10px] font-semibold uppercase tracking-wider text-[#687064]">
             Or with email
           </span>
         </div>
@@ -111,11 +114,11 @@ function LoginFormContent() {
         {/* Email / Password Form */}
         <form onSubmit={handleSubmit} className="space-y-3.5">
           <div className="space-y-1.5">
-            <Label htmlFor="email" className="text-xs text-foreground/80">
+            <Label htmlFor="email" className="text-xs font-semibold text-[#171914]">
               Email Address
             </Label>
             <div className="relative">
-              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5 text-muted-foreground">
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-[#687064]">
                 <HugeiconsIcon icon={Mail01Icon} className="size-3.5" />
               </div>
               <Input
@@ -126,17 +129,17 @@ function LoginFormContent() {
                 placeholder="you@example.com"
                 required
                 autoComplete="email"
-                className="h-9 pl-8 text-xs"
+                className="h-9 pl-9 text-xs rounded-md border border-[#1A1A1A]/15 bg-[#F7F6F0] focus:bg-white text-[#171914] font-medium"
               />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="password" className="text-xs text-foreground/80">
+            <Label htmlFor="password" className="text-xs font-semibold text-[#171914]">
               Password
             </Label>
             <div className="relative">
-              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5 text-muted-foreground">
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-[#687064]">
                 <HugeiconsIcon icon={LockPasswordIcon} className="size-3.5" />
               </div>
               <Input
@@ -147,13 +150,13 @@ function LoginFormContent() {
                 placeholder="••••••••"
                 required
                 autoComplete="current-password"
-                className="h-9 pl-8 pr-9 text-xs"
+                className="h-9 pl-9 pr-9 text-xs rounded-md border border-[#1A1A1A]/15 bg-[#F7F6F0] focus:bg-white text-[#171914] font-medium"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 aria-label={showPassword ? "Hide password" : "Show password"}
-                className="absolute inset-y-0 right-0 flex items-center pr-2.5 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                className="absolute inset-y-0 right-0 flex items-center pr-3 text-[#687064] hover:text-[#171914] transition-colors cursor-pointer"
               >
                 <HugeiconsIcon
                   icon={showPassword ? ViewOffSlashIcon : ViewIcon}
@@ -166,27 +169,26 @@ function LoginFormContent() {
           <Button
             id="login-submit-button"
             type="submit"
-            size="lg"
             disabled={isLoading}
-            className="w-full h-9 gap-1.5 text-xs font-semibold cursor-pointer shadow-md shadow-primary/20"
+            className="w-full h-9 gap-2 text-xs font-semibold rounded-md bg-[#172013] hover:bg-[#26321E] text-white transition-all cursor-pointer mt-2"
           >
             {isLoading ? (
-              <Spinner className="size-4" />
+              <Spinner className="size-4 text-white" />
             ) : (
               <>
                 <span>Sign In</span>
-                <HugeiconsIcon icon={ArrowRight01Icon} className="size-3.5" />
+                <HugeiconsIcon icon={ArrowRight01Icon} className="size-3.5 text-[#DDF19B]" />
               </>
             )}
           </Button>
         </form>
       </CardContent>
 
-      <CardFooter className="justify-center border-t border-border/50 pt-3 text-xs text-muted-foreground">
+      <CardFooter className="justify-center border-t border-[#1A1A1A]/10 py-3.5 text-xs font-medium text-[#5A5D55]">
         Don&apos;t have an account?{" "}
         <Link
           href={`/signup${next !== "/dashboard" ? `?next=${encodeURIComponent(next)}` : ""}`}
-          className="ml-1 font-medium text-primary hover:underline transition-colors"
+          className="ml-1 font-bold text-[#171914] hover:underline transition-colors"
         >
           Sign up
         </Link>
@@ -199,8 +201,8 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <Card className="w-full h-96 flex items-center justify-center border-border/80 bg-card/60">
-          <Spinner className="size-8 text-primary" />
+        <Card className="w-full h-80 flex items-center justify-center border border-[#1A1A1A]/15 bg-white rounded-lg shadow-sm">
+          <Spinner className="size-6 text-[#171914]" />
         </Card>
       }
     >

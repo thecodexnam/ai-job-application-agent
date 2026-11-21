@@ -55,10 +55,10 @@ export function GoogleButton({
         size="lg"
         onClick={handleGoogleSignIn}
         disabled={isLoading}
-        className="w-full h-10 gap-3 border-border/80 bg-background/80 hover:bg-accent/60 font-medium cursor-pointer shadow-sm"
+        className="w-full h-10 gap-3 border border-[#1A1A1A]/20 bg-white hover:bg-[#F7F6F0] text-[#171914] rounded-md font-semibold text-xs cursor-pointer transition-all shadow-none"
       >
         {isLoading ? (
-          <Spinner className="size-4 text-primary" />
+          <Spinner className="size-4 text-[#171914]" />
         ) : (
           <svg className="size-4 shrink-0" viewBox="0 0 24 24">
             <path
@@ -83,7 +83,7 @@ export function GoogleButton({
       </Button>
 
       {error && (
-        <Alert variant="destructive" className="py-2 px-3 text-xs">
+        <Alert variant="destructive" className="py-2 px-3 text-xs rounded-md">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}

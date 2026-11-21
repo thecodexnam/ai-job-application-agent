@@ -1,36 +1,71 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# JobBuddy AI
 
-## Getting Started
+JobBuddy is a Next.js job-search and application workspace built with Supabase, Gemini, Brave Search, Inngest, and optional Browserbase/Stagehand automation.
 
-First, run the development server:
+## Features
+
+- Supabase email/password and Google authentication
+- Profile and resume management
+- Verified job discovery across configured job platforms
+- Application pipeline and status tracking
+- Manual and automated application workflows
+- Mock automation mode for local testing
+
+## Local setup
+
+Requirements: Node.js 20+ and a Supabase project.
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Required:
 
-## Learn More
+```env
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+```
 
-To learn more about Next.js, take a look at the following resources:
+Optional integrations:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```env
+GEMINI_API_KEY=
+GEMINI_MODEL=
+BRAVE_SEARCH_API_KEY=
+JSEARCH_API_KEY=
+APPLICATION_AUTOMATION_MODE=mock
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+BROWSERBASE_API_KEY=
+BROWSERBASE_PROJECT_ID=
+OPENAI_API_KEY=
+ANTHROPIC_API_KEY=
+```
 
-## Deploy on Vercel
+Use `APPLICATION_AUTOMATION_MODE=mock` to test application UI flows without real browser submission.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Supabase setup
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Apply the SQL schema and migrations from `supabase/` in chronological migration order. The project uses Supabase Auth triggers, Row Level Security policies, storage, and application workflow tables.
+
+Configure the Google OAuth provider in Supabase and add:
+
+```text
+http://localhost:3000/auth/callback
+```
+
+For production, add the deployed `/auth/callback` URL instead.
+
+## Validation
+
+```bash
+npm test
+npm run lint
+npm run build
+npm start
+```

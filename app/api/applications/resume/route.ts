@@ -21,9 +21,9 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { applicationId, updatedFields } = body;
 
-    if (!applicationId || !updatedFields) {
+    if (!applicationId) {
       return NextResponse.json(
-        { error: "Missing required parameters: applicationId, updatedFields." },
+        { error: "Missing required parameter: applicationId." },
         { status: 400 }
       );
     }
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     const result = await ApplicationAgent.resumeApplication(
       user.id,
       applicationId,
-      updatedFields
+      updatedFields || {}
     );
 
     return NextResponse.json(result);

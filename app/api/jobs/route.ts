@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { POST as searchJobs } from "./search/route";
 import { ALL_JOB_PLATFORMS } from "@/types/job";
 

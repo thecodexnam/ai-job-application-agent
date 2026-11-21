@@ -97,6 +97,42 @@ export function PlatformLogo({
           </svg>
         );
 
+      case "indeed":
+        return (
+          <svg
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            className="size-full"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path d="M12.9 3.6c0 1.2-.95 2.15-2.15 2.15-1.2 0-2.15-.95-2.15-2.15 0-1.2.95-2.15 2.15-2.15 1.2 0 2.15.95 2.15 2.15zm-1.07 4.28H8.8v12.25h3.03V7.88zm6.54 4.09c-1.47 0-2.58.74-3.04 1.52v-1.33h-2.95v7.97h3.07v-4.33c0-1.2.62-1.95 1.63-1.95.93 0 1.43.69 1.43 1.84v4.44h3.12v-4.62c0-2.09-1.26-3.63-3.26-3.63z" />
+          </svg>
+        );
+
+      case "remotive":
+        return (
+          <svg
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            className="size-full"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z" />
+          </svg>
+        );
+
+      case "arbeitnow":
+        return (
+          <svg
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            className="size-full"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path d="M12 2L2 22h4.5l2.2-4.5h6.6L17.5 22H22L12 2zm-1.8 11.5L12 7.8l1.8 5.7h-3.6z" />
+          </svg>
+        );
+
       default:
         return (
           <span className="font-extrabold text-[10px] tracking-tight">

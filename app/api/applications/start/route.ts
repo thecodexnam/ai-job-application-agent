@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { jobId, jobTitle, company, jobUrl, applicationMode } = body;
+    const { jobId, jobTitle, company, jobUrl, applicationMode, force } = body;
 
     if (!jobTitle || !company || !jobUrl || !applicationMode) {
       return NextResponse.json(
@@ -28,15 +28,22 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (applicationMode !== "manual" && applicationMode !== "automated") {
+      return NextResponse.json({ error: "applicationMode must be manual or automated." }, { status: 400 });
+    }
+
     const result = await ApplicationAgent.startApplication(user.id, {
       jobId,
       jobTitle,
       company,
       jobUrl,
       applicationMode,
+      force: Boolean(force),
     });
 
-    return NextResponse.json(result);
+    const isConflict = Boolean(result.isDuplicate || result.isConcurrencyLock);
+    const status = isConflict ? 409 : 200;
+    return NextResponse.json(result, { status: result.success || result.queued ? 200 : status });
   } catch (err: any) {
     console.error("[API/applications/start] Error:", err);
     return NextResponse.json(

@@ -15,14 +15,15 @@ import {
   RefreshIcon,
   SparklesIcon,
   ArrowRight01Icon,
+  Folder01Icon,
+  Calendar03Icon,
+  TickDouble01Icon,
+  CloudUploadIcon,
 } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
   CardContent,
 } from "@/components/ui/card";
 import {
@@ -78,7 +79,7 @@ export function ResumeManager({ initialResumes }: ResumeManagerProps) {
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       handleFileSelected(e.target.files[0]);
-      e.target.value = ""; // Reset input so same file can be uploaded again
+      e.target.value = "";
     }
   };
 
@@ -144,111 +145,109 @@ export function ResumeManager({ initialResumes }: ResumeManagerProps) {
 
       setUploadStep("Auto-filling candidate profile...");
 
-      // Refresh list from server
-      await fetchResumesList();
+      // Update the record with server response
+      if (data.resume) {
+        setResumes((prev) =>
+          prev.map((r) => (r.id === tempId ? (data.resume as ResumeRecord) : r))
+        );
+      }
 
       setSuccessMessage(
-        `"${file.name}" uploaded and parsed successfully! Your profile has been automatically updated.`
+        `Resume "${file.name}" uploaded successfully! Skills and profile data have been extracted.`
       );
-    } catch (err: any) {
-      console.error("Upload error:", err);
-      setErrorMessage(err.message || "An error occurred during resume upload.");
-      await fetchResumesList();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to upload resume";
+      setErrorMessage(msg);
+      // Remove temp placeholder on failure
+      setResumes((prev) => prev.filter((r) => !r.id.startsWith("temp-")));
     } finally {
       setIsUploading(false);
       setUploadStep("");
     }
   };
 
-  const fetchResumesList = async () => {
-    try {
-      const res = await fetch("/api/resumes");
-      if (res.ok) {
-        const data = await res.json();
-        setResumes(data.resumes || []);
-      }
-    } catch (err) {
-      console.error("Failed to refresh resumes:", err);
-    }
-  };
-
-  const handleView = async (resumeId: string) => {
-    try {
-      const res = await fetch(`/api/resumes/${resumeId}`);
-      const data = await res.json();
-      if (data.url) {
-        window.open(data.url, "_blank");
-      } else {
-        alert(data.error || "Failed to generate view link.");
-      }
-    } catch (err) {
-      alert("Failed to open resume document.");
-    }
-  };
-
-  const handleDownload = async (resumeId: string, fileName: string) => {
-    try {
-      const res = await fetch(`/api/resumes/${resumeId}`);
-      const data = await res.json();
-      if (data.url) {
-        const a = document.createElement("a");
-        a.href = data.url;
-        a.download = fileName;
-        a.target = "_blank";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      } else {
-        alert(data.error || "Failed to download document.");
-      }
-    } catch (err) {
-      alert("Failed to download document.");
-    }
-  };
-
+  // Re-parse resume
   const handleReParse = async (resumeId: string) => {
     try {
       setReparsingId(resumeId);
       setErrorMessage(null);
-      setSuccessMessage(null);
 
-      setResumes((prev) =>
-        prev.map((r) => (r.id === resumeId ? { ...r, parsing_status: "processing" } : r))
-      );
+      const res = await fetch("/api/resumes/parse", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resumeId }),
+      });
 
-      const res = await fetch(`/api/resumes/${resumeId}`, { method: "POST" });
       const data = await res.json();
-
       if (!res.ok || !data.success) {
         throw new Error(data.error || "Failed to re-parse resume.");
       }
 
-      await fetchResumesList();
-      setSuccessMessage("Resume re-parsed and profile auto-fill updated successfully!");
-    } catch (err: any) {
-      setErrorMessage(err.message || "Failed to re-parse resume.");
-      await fetchResumesList();
+      setResumes((prev) =>
+        prev.map((r) => (r.id === resumeId ? { ...r, parsing_status: "parsed" } : r))
+      );
+      setSuccessMessage("Resume re-parsed successfully! Candidate Profile updated.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to re-parse";
+      setErrorMessage(msg);
     } finally {
       setReparsingId(null);
     }
   };
 
+  // View resume URL in new tab
+  const handleView = async (resumeId: string) => {
+    try {
+      const res = await fetch(`/api/resumes/url?id=${resumeId}`);
+      const data = await res.json();
+      if (!res.ok || !data.url) throw new Error(data.error || "Cannot view resume");
+      window.open(data.url, "_blank");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to open resume";
+      setErrorMessage(msg);
+    }
+  };
+
+  // Download resume file
+  const handleDownload = async (resumeId: string, fileName: string) => {
+    try {
+      const res = await fetch(`/api/resumes/url?id=${resumeId}`);
+      const data = await res.json();
+      if (!res.ok || !data.url) throw new Error(data.error || "Cannot download resume");
+
+      const link = document.createElement("a");
+      link.href = data.url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to download";
+      setErrorMessage(msg);
+    }
+  };
+
+  // Confirm delete
   const confirmDelete = async () => {
     if (!deleteTarget) return;
 
     try {
       setIsDeleting(true);
-      const res = await fetch(`/api/resumes/${deleteTarget.id}`, { method: "DELETE" });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to delete resume.");
+      const res = await fetch(`/api/resumes/${deleteTarget.id}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to delete resume");
       }
 
       setResumes((prev) => prev.filter((r) => r.id !== deleteTarget.id));
-      setSuccessMessage(`Resume "${deleteTarget.file_name}" was deleted.`);
       setDeleteTarget(null);
-    } catch (err: any) {
-      setErrorMessage(err.message || "Failed to delete resume.");
+      setSuccessMessage(`Resume "${deleteTarget.file_name}" deleted.`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to delete resume";
+      setErrorMessage(msg);
     } finally {
       setIsDeleting(false);
     }
@@ -256,61 +255,50 @@ export function ResumeManager({ initialResumes }: ResumeManagerProps) {
 
   const formatFileSize = (bytes?: number | null) => {
     if (!bytes) return "0 KB";
-    const k = 1024;
-    if (bytes < k) return `${bytes} B`;
-    if (bytes < k * k) return `${(bytes / k).toFixed(1)} KB`;
-    return `${(bytes / (k * k)).toFixed(1)} MB`;
+    const kb = bytes / 1024;
+    if (kb < 1024) return `${kb.toFixed(1)} KB`;
+    return `${(kb / 1024).toFixed(1)} MB`;
   };
 
-  const formatDate = (dateStr: string) => {
+  const formatDate = (isoString: string) => {
     try {
-      const d = new Date(dateStr);
-      return d.toLocaleDateString("en-US", {
+      return new Date(isoString).toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
         year: "numeric",
       });
     } catch {
-      return dateStr;
+      return "Recent";
     }
   };
 
   return (
-    <div className="space-y-8">
-      {/* Notifications */}
+    <div className="space-y-6">
+      {/* Alert Banners */}
       {successMessage && (
-        <div className="flex items-center justify-between p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-200 shadow-sm transition-all animate-in fade-in">
-          <div className="flex items-center gap-3 min-w-0">
-            <HugeiconsIcon icon={CheckmarkCircle02Icon} className="size-5 text-emerald-400 shrink-0" />
-            <span className="text-sm font-medium truncate">{successMessage}</span>
+        <div className="flex items-center justify-between p-3.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-900 transition-all animate-in fade-in">
+          <div className="flex items-center gap-2.5">
+            <HugeiconsIcon icon={CheckmarkCircle02Icon} className="size-4 text-emerald-700 shrink-0" />
+            <span className="text-xs font-semibold">{successMessage}</span>
           </div>
-          <div className="flex items-center gap-3 shrink-0">
-            <Link
-              href="/dashboard/profile"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-300 bg-emerald-500/20 hover:bg-emerald-500/30 px-3 py-1.5 rounded-lg transition-colors border border-emerald-500/30"
-            >
-              Review Profile
-              <HugeiconsIcon icon={ArrowRight01Icon} className="size-3.5" />
-            </Link>
-            <button
-              onClick={() => setSuccessMessage(null)}
-              className="text-emerald-400 hover:text-emerald-200 text-xs font-medium px-2 py-1"
-            >
-              ✕
-            </button>
-          </div>
+          <button
+            onClick={() => setSuccessMessage(null)}
+            className="text-emerald-700 hover:text-emerald-950 text-xs font-semibold px-2 py-0.5"
+          >
+            ✕
+          </button>
         </div>
       )}
 
       {errorMessage && (
-        <div className="flex items-center justify-between p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-200 shadow-sm transition-all animate-in fade-in">
-          <div className="flex items-center gap-3">
-            <HugeiconsIcon icon={AlertCircleIcon} className="size-5 text-rose-400 shrink-0" />
-            <span className="text-sm font-medium">{errorMessage}</span>
+        <div className="flex items-center justify-between p-3.5 rounded-md bg-rose-50 border border-rose-200 text-rose-900 transition-all animate-in fade-in">
+          <div className="flex items-center gap-2.5">
+            <HugeiconsIcon icon={AlertCircleIcon} className="size-4 text-rose-600 shrink-0" />
+            <span className="text-xs font-semibold">{errorMessage}</span>
           </div>
           <button
             onClick={() => setErrorMessage(null)}
-            className="text-rose-400 hover:text-rose-200 text-xs font-medium px-2 py-1"
+            className="text-rose-700 hover:text-rose-950 text-xs font-semibold px-2 py-0.5"
           >
             ✕
           </button>
@@ -322,13 +310,13 @@ export function ResumeManager({ initialResumes }: ResumeManagerProps) {
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        className={`relative overflow-hidden border-2 border-dashed rounded-3xl transition-all duration-300 ${
+        className={`relative overflow-hidden border border-dashed rounded-lg transition-colors duration-200 ${
           isDragging
-            ? "border-indigo-500 bg-indigo-500/10 shadow-xl shadow-indigo-500/10 scale-[1.005]"
-            : "border-zinc-800 bg-gradient-to-br from-[#18181B] via-[#151518] to-[#121215] hover:border-zinc-700 shadow-md"
+            ? "border-[#7B9E32] bg-[#F3F8E2]"
+            : "border-[#1A1A1A]/20 bg-white hover:bg-[#F7F6F0]"
         }`}
       >
-        <CardContent className="p-8 sm:p-12 flex flex-col items-center text-center">
+        <CardContent className="p-8 sm:p-10 flex flex-col items-center text-center">
           <input
             ref={fileInputRef}
             type="file"
@@ -339,60 +327,52 @@ export function ResumeManager({ initialResumes }: ResumeManagerProps) {
 
           <div
             onClick={() => !isUploading && fileInputRef.current?.click()}
-            className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-all cursor-pointer ${
-              isUploading
-                ? "bg-indigo-500/20 text-indigo-400 border border-indigo-500/40 animate-pulse"
-                : "bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 hover:scale-105 hover:bg-indigo-500/25 shadow-lg shadow-indigo-500/10"
-            }`}
+            className="flex size-12 items-center justify-center rounded-lg bg-[#E9F2D1] text-[#304019] border border-[#1A1A1A]/10 mb-4 cursor-pointer hover:bg-[#DDF19B] transition-colors"
           >
-            {isUploading ? (
-              <HugeiconsIcon icon={Loading03Icon} className="size-8 animate-spin" />
-            ) : (
-              <HugeiconsIcon icon={Upload04Icon} className="size-8" />
-            )}
+            <HugeiconsIcon icon={CloudUploadIcon} className="size-6" />
           </div>
 
-          <h3 className="text-lg sm:text-xl font-bold text-[#FAFAFA] mb-1.5">
-            {isUploading ? "Processing Resume..." : "Upload your Master Resume"}
+          <h3 className="text-base sm:text-lg font-bold text-[#171914] mb-1">
+            {isDragging ? "Drop to upload" : "Upload master resume"}
           </h3>
 
-          <p className="text-sm text-zinc-400 max-w-md mb-5 leading-relaxed">
+          <p className="text-xs sm:text-sm text-[#5A5D55] max-w-md mb-5 leading-relaxed">
             {isUploading
               ? uploadStep
-              : "Drag and drop your resume file here, or browse from your computer. JobBuddy AI extracts skills, work history, education, and automatically populates your profile."}
+              : "Drag and drop your resume file here, or browse from your computer. JobBuddy AI extracts skills, work history, and education automatically."}
           </p>
 
           {isUploading ? (
-            <div className="w-full max-w-xs space-y-2.5">
-              <div className="h-2 w-full bg-zinc-800 rounded-full overflow-hidden border border-zinc-700">
-                <div className="h-full bg-indigo-500 rounded-full animate-pulse transition-all w-3/4" />
+            <div className="w-full max-w-xs space-y-2">
+              <div className="h-2 w-full bg-[#E7E5DC] rounded-full overflow-hidden">
+                <div className="h-full bg-[#7B9E32] transition-all duration-300 w-3/4 rounded-full" />
               </div>
-              <span className="text-xs text-indigo-400 font-medium">{uploadStep}</span>
+              <span className="text-xs text-[#171914] font-medium">{uploadStep}</span>
             </div>
           ) : (
             <div className="flex flex-col sm:flex-row items-center gap-3">
               <Button
                 onClick={() => fileInputRef.current?.click()}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/20 font-medium gap-2 px-6 h-10 rounded-xl"
+                className="bg-[#172013] hover:bg-[#26321E] text-white font-semibold gap-2 px-5 h-9 rounded-md text-xs cursor-pointer"
               >
-                <HugeiconsIcon icon={Upload04Icon} className="size-4" />
+                <HugeiconsIcon icon={Upload04Icon} className="size-3.5" />
                 Select File
               </Button>
-              <span className="text-xs text-zinc-500">PDF or DOCX, max 10MB</span>
+              <span className="text-xs text-[#687064]">PDF or DOCX, max 10MB</span>
             </div>
           )}
 
-          <div className="flex items-center gap-6 mt-8 pt-6 border-t border-zinc-800/80 text-xs text-zinc-400 flex-wrap justify-center">
+          <div className="flex items-center gap-6 mt-6 pt-5 border-t border-[#1A1A1A]/10 text-xs font-medium text-[#5A5D55] flex-wrap justify-center">
             <span className="inline-flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
-              End-to-End Encryption
+              <span className="w-1.5 h-1.5 rounded-full bg-[#7B9E32]" />
+              Secure Storage
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[#7B9E32]" />
               AI Structured Extraction
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[#7B9E32]" />
               100% User-Editable
             </span>
           </div>
@@ -400,34 +380,37 @@ export function ResumeManager({ initialResumes }: ResumeManagerProps) {
       </Card>
 
       {/* Resumes List */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
+      <div className="space-y-3.5">
+        <div className="flex items-center justify-between pb-1">
           <div>
-            <h3 className="text-base font-semibold text-[#FAFAFA]">Your Uploaded Resumes</h3>
-            <p className="text-xs text-zinc-400">
-              Manage your active master resumes, view extracted data, or download copies.
+            <h3 className="text-base font-bold text-[#171914] flex items-center gap-2">
+              <HugeiconsIcon icon={Folder01Icon} className="size-4 text-[#687064]" />
+              Your Resumes
+            </h3>
+            <p className="text-xs text-[#5A5D55] mt-0.5">
+              Manage your uploaded master documents
             </p>
           </div>
-          <Badge variant="outline" className="text-zinc-300 border-zinc-800 bg-zinc-800/50 font-medium text-xs py-1 px-3">
-            {resumes.length} {resumes.length === 1 ? "document" : "documents"}
+          <Badge variant="outline" className="text-[#171914] border border-[#1A1A1A]/15 bg-white font-semibold text-xs py-0.5 px-2.5 rounded-md">
+            {resumes.length} {resumes.length === 1 ? 'file' : 'files'}
           </Badge>
         </div>
 
         {resumes.length === 0 ? (
-          <Card className="border-dashed border-zinc-800 bg-[#141417]/80 rounded-2xl">
-            <CardContent className="p-10 text-center flex flex-col items-center">
-              <div className="w-12 h-12 rounded-2xl bg-zinc-800/80 border border-zinc-700/60 flex items-center justify-center text-zinc-400 mb-3">
-                <HugeiconsIcon icon={File02Icon} className="size-6" />
+          <Card className="border border-dashed border-[#1A1A1A]/20 bg-[#F7F6F0] rounded-lg">
+            <CardContent className="flex flex-col items-center justify-center py-10 text-center">
+              <div className="w-10 h-10 rounded-lg bg-[#E9F2D1] text-[#304019] flex items-center justify-center mb-3">
+                <HugeiconsIcon icon={File02Icon} className="size-5" />
               </div>
-              <p className="text-sm font-medium text-[#FAFAFA] mb-1">No resumes uploaded yet</p>
-              <p className="text-xs text-zinc-400 max-w-sm mb-4">
-                Upload your resume above to automatically index your skills, experiences, and project portfolio.
+              <h4 className="text-sm font-bold text-[#171914] mb-1">No resumes yet</h4>
+              <p className="text-xs text-[#5A5D55] max-w-sm mb-4">
+                Upload your first master resume to start building your AI-powered career profile.
               </p>
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() => fileInputRef.current?.click()}
-                className="gap-2 text-indigo-400 border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20"
+                className="gap-2 border border-[#1A1A1A]/20 bg-white hover:bg-[#F2F0E8] font-semibold text-xs rounded-md"
               >
                 <HugeiconsIcon icon={Upload04Icon} className="size-3.5" />
                 Upload First Resume
@@ -435,7 +418,7 @@ export function ResumeManager({ initialResumes }: ResumeManagerProps) {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 gap-3">
+          <div className="grid grid-cols-1 gap-2.5">
             {resumes.map((resume) => {
               const isPdf = resume.file_name.toLowerCase().endsWith(".pdf");
               const isReparsing = reparsingId === resume.id || resume.parsing_status === "processing";
@@ -443,36 +426,36 @@ export function ResumeManager({ initialResumes }: ResumeManagerProps) {
               return (
                 <Card
                   key={resume.id}
-                  className="bg-[#18181B] border border-zinc-800 hover:border-zinc-700 transition-all rounded-2xl shadow-sm"
+                  className="bg-white border border-[#1A1A1A]/15 hover:border-[#1A1A1A]/35 transition-colors rounded-lg"
                 >
-                  <CardContent className="p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <CardContent className="p-4 sm:p-4.5 flex flex-col sm:flex-row gap-4 sm:items-center justify-between">
                     {/* File info */}
-                    <div className="flex items-start gap-3.5 min-w-0">
-                      <div
-                        className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 font-bold text-xs ${
-                          isPdf
-                            ? "bg-rose-500/15 text-rose-400 border border-rose-500/30"
-                            : "bg-blue-500/15 text-blue-400 border border-blue-500/30"
-                        }`}
-                      >
-                        {isPdf ? "PDF" : "DOC"}
+                    <div className="flex items-start gap-3.5">
+                      <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-[#F2F0E8] border border-[#1A1A1A]/10 text-[#171914]">
+                        <HugeiconsIcon icon={File02Icon} className="size-5" />
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className="text-sm font-semibold text-[#FAFAFA] truncate">
+                          <h4 className="text-sm font-bold text-[#171914] tracking-tight">
                             {resume.file_name}
                           </h4>
                           {resume.is_primary && (
-                            <Badge className="bg-indigo-500/15 text-indigo-300 border-indigo-500/30 text-[10px] font-semibold py-0 px-2">
-                              Master Resume
+                            <Badge className="bg-[#DDF19B] text-[#1B2710] border border-[#9FB944] text-[10px] font-semibold py-0 px-2 rounded-sm">
+                              Master
                             </Badge>
                           )}
                         </div>
-
-                        <div className="flex items-center gap-3 text-xs text-zinc-400 mt-1 flex-wrap">
+                        <div className="flex items-center gap-2.5 text-[11px] font-medium text-[#687064] mt-0.5 flex-wrap">
+                          <span className="flex items-center gap-1">
+                            <HugeiconsIcon icon={Calendar03Icon} className="size-3" />
+                            {formatDate(resume.created_at)}
+                          </span>
+                          <span>•</span>
                           <span>{formatFileSize(resume.file_size)}</span>
                           <span>•</span>
-                          <span>Uploaded {formatDate(resume.created_at)}</span>
+                          <span className="uppercase text-[9px] bg-[#F7F6F0] px-1.5 py-0.2 rounded border border-[#1A1A1A]/10 font-semibold text-[#171914]">
+                            {isPdf ? "PDF" : "DOCX"}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -481,41 +464,34 @@ export function ResumeManager({ initialResumes }: ResumeManagerProps) {
                     <div className="flex items-center gap-3 self-end sm:self-center shrink-0 flex-wrap">
                       {/* Status Badge */}
                       {resume.parsing_status === "parsed" && (
-                        <Badge className="bg-emerald-500/15 text-emerald-300 border-emerald-500/30 gap-1.5 py-1 px-2.5 font-medium text-xs">
-                          <HugeiconsIcon icon={CheckmarkCircle02Icon} className="size-3.5 text-emerald-400" />
-                          Parsed Successfully
+                        <Badge variant="outline" className="gap-1 bg-emerald-50 border border-emerald-300 text-emerald-800 font-semibold text-[10px] py-0.5 rounded-md">
+                          <HugeiconsIcon icon={TickDouble01Icon} className="size-3 text-emerald-700" />
+                          Parsed
                         </Badge>
                       )}
 
                       {resume.parsing_status === "processing" && (
-                        <Badge className="bg-purple-500/15 text-purple-300 border-purple-500/30 gap-1.5 py-1 px-2.5 font-medium text-xs animate-pulse">
-                          <HugeiconsIcon icon={Loading03Icon} className="size-3.5 animate-spin text-purple-400" />
-                          AI Parsing...
-                        </Badge>
-                      )}
-
-                      {resume.parsing_status === "uploading" && (
-                        <Badge className="bg-indigo-500/15 text-indigo-300 border-indigo-500/30 gap-1.5 py-1 px-2.5 font-medium text-xs animate-pulse">
-                          <HugeiconsIcon icon={Loading03Icon} className="size-3.5 animate-spin text-indigo-400" />
-                          Uploading...
+                        <Badge className="bg-[#DDF19B] text-[#1B2710] border border-[#9FB944] gap-1.5 py-0.5 px-2.5 font-semibold text-[10px] rounded-md animate-pulse">
+                          <HugeiconsIcon icon={Loading03Icon} className="size-3.5 animate-spin text-[#1B2710]" />
+                          Processing...
                         </Badge>
                       )}
 
                       {resume.parsing_status === "failed" && (
-                        <Badge className="bg-rose-500/15 text-rose-300 border-rose-500/30 gap-1.5 py-1 px-2.5 font-medium text-xs">
-                          <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 text-rose-400" />
+                        <Badge variant="destructive" className="gap-1 border border-rose-300 bg-rose-50 text-rose-800 font-semibold text-[10px] py-0.5 rounded-md">
+                          <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 text-rose-700" />
                           Parsing Failed
                         </Badge>
                       )}
 
                       {/* Action buttons */}
-                      <div className="flex items-center gap-1 border-l border-zinc-800 pl-3">
+                      <div className="flex items-center gap-1 border-l border-[#1A1A1A]/10 pl-2.5">
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleView(resume.id)}
                           title="View Resume"
-                          className="h-8 w-8 p-0 text-zinc-400 hover:text-[#FAFAFA] hover:bg-zinc-800 rounded-lg"
+                          className="h-8 w-8 p-0 text-[#687064] hover:text-[#171914] hover:bg-[#F2F0E8] rounded-md"
                         >
                           <HugeiconsIcon icon={ViewIcon} className="size-4" />
                         </Button>
@@ -525,7 +501,7 @@ export function ResumeManager({ initialResumes }: ResumeManagerProps) {
                           size="sm"
                           onClick={() => handleDownload(resume.id, resume.file_name)}
                           title="Download Document"
-                          className="h-8 w-8 p-0 text-zinc-400 hover:text-indigo-400 hover:bg-zinc-800 rounded-lg"
+                          className="h-8 w-8 p-0 text-[#687064] hover:text-[#171914] hover:bg-[#F2F0E8] rounded-md"
                         >
                           <HugeiconsIcon icon={Download04Icon} className="size-4" />
                         </Button>
@@ -536,11 +512,11 @@ export function ResumeManager({ initialResumes }: ResumeManagerProps) {
                           disabled={isReparsing}
                           onClick={() => handleReParse(resume.id)}
                           title="Re-Parse with AI"
-                          className="h-8 w-8 p-0 text-zinc-400 hover:text-purple-400 hover:bg-zinc-800 rounded-lg"
+                          className="h-8 w-8 p-0 text-[#687064] hover:text-[#171914] hover:bg-[#F2F0E8] rounded-md"
                         >
                           <HugeiconsIcon
                             icon={isReparsing ? Loading03Icon : RefreshIcon}
-                            className={`size-4 ${isReparsing ? "animate-spin text-purple-400" : ""}`}
+                            className={`size-4 ${isReparsing ? "animate-spin text-[#171914]" : ""}`}
                           />
                         </Button>
 
@@ -549,7 +525,7 @@ export function ResumeManager({ initialResumes }: ResumeManagerProps) {
                           size="sm"
                           onClick={() => setDeleteTarget(resume)}
                           title="Delete Resume"
-                          className="h-8 w-8 p-0 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg"
+                          className="h-8 w-8 p-0 text-[#687064] hover:text-rose-700 hover:bg-rose-50 rounded-md"
                         >
                           <HugeiconsIcon icon={Delete02Icon} className="size-4" />
                         </Button>
@@ -561,37 +537,57 @@ export function ResumeManager({ initialResumes }: ResumeManagerProps) {
             })}
           </div>
         )}
+
+        {/* ATS Pro Tip Banner */}
+        <div className="rounded-lg border border-[#9FB944]/40 bg-[#F3F8E2] p-4 text-[#26320E] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="space-y-0.5">
+            <h4 className="text-xs font-bold text-[#1B2710] flex items-center gap-1.5">
+              <HugeiconsIcon icon={SparklesIcon} className="size-3.5 text-[#7B9E32]" />
+              AI Extraction & Profile Sync
+            </h4>
+            <p className="text-[11px] text-[#304019] max-w-xl leading-relaxed">
+              When you upload a master resume, JobBuddy extracts your work history, skills, and contact details into your Candidate Profile. You can customize, reorder, or add more details anytime.
+            </p>
+          </div>
+          <Link
+            href="/dashboard/profile"
+            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white hover:bg-[#F2F0E8] border border-[#1A1A1A]/15 text-xs font-semibold text-[#171914] transition-colors"
+          >
+            <span>Candidate Profile</span>
+            <HugeiconsIcon icon={ArrowRight01Icon} className="size-3.5" />
+          </Link>
+        </div>
       </div>
 
       {/* Delete Confirmation Modal */}
       <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
-        <DialogContent className="sm:max-w-md bg-[#18181B] border border-zinc-800 text-[#FAFAFA]">
+        <DialogContent className="sm:max-w-md bg-white border border-[#1A1A1A]/20 text-[#171914] rounded-lg shadow-xl">
           <DialogHeader>
-            <div className="w-10 h-10 rounded-full bg-rose-500/15 border border-rose-500/30 text-rose-400 flex items-center justify-center mb-2">
-              <HugeiconsIcon icon={Delete02Icon} className="size-5" />
-            </div>
-            <DialogTitle className="text-[#FAFAFA]">Delete Resume?</DialogTitle>
-            <DialogDescription className="text-zinc-400 text-sm">
-              Are you sure you want to delete <span className="font-semibold text-zinc-200">"{deleteTarget?.file_name}"</span>?
-              This will permanently remove the file from secure cloud storage. Existing profile entries will be kept intact.
+            <DialogTitle className="text-base font-bold tracking-tight">
+              Delete Resume
+            </DialogTitle>
+            <DialogDescription className="text-[#5A5D55] text-xs leading-relaxed mt-1">
+              Are you sure you want to delete <span className="font-semibold text-[#171914]">"{deleteTarget?.file_name}"</span>?
+              This will remove the file from storage and delete the database record. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="gap-2 sm:gap-0 mt-4">
+          <DialogFooter className="mt-4 gap-2 sm:justify-end">
             <Button
+              type="button"
               variant="outline"
               onClick={() => setDeleteTarget(null)}
-              disabled={isDeleting}
-              className="border-zinc-700 bg-zinc-800 text-zinc-200 hover:bg-zinc-700"
+              className="border border-[#1A1A1A]/20 bg-white text-[#171914] hover:bg-[#F2F0E8] text-xs font-semibold rounded-md"
             >
               Cancel
             </Button>
             <Button
+              type="button"
               variant="destructive"
               onClick={confirmDelete}
               disabled={isDeleting}
-              className="bg-rose-600 hover:bg-rose-500 text-white gap-2"
+              className="bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-md"
             >
-              {isDeleting && <HugeiconsIcon icon={Loading03Icon} className="size-4 animate-spin" />}
+              {isDeleting && <HugeiconsIcon icon={Loading03Icon} className="size-3.5 animate-spin" />}
               {isDeleting ? "Deleting..." : "Delete Resume"}
             </Button>
           </DialogFooter>

@@ -5,6 +5,14 @@ export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const next = searchParams.get("next") ?? "/dashboard";
+  const errorDescription = searchParams.get("error_description") || searchParams.get("error");
+
+  if (errorDescription) {
+    console.error("[Auth Callback] Error from OAuth provider:", errorDescription);
+    return NextResponse.redirect(
+      `${origin}/login?error=${encodeURIComponent(errorDescription)}`
+    );
+  }
 
   if (code) {
     const supabase = await createClient();
@@ -19,9 +27,16 @@ export async function GET(request: Request) {
       } else {
         return NextResponse.redirect(`${origin}${next}`);
       }
+    } else {
+      console.error("[Auth Callback] exchangeCodeForSession error:", error.message);
+      return NextResponse.redirect(
+        `${origin}/login?error=${encodeURIComponent(error.message)}`
+      );
     }
   }
 
   // Return the user to an error page or login with an error query param
-  return NextResponse.redirect(`${origin}/login?error=Could not authenticate with Google. Please try again.`);
+  return NextResponse.redirect(
+    `${origin}/login?error=${encodeURIComponent("Could not authenticate with Google. No authorization code received.")}`
+  );
 }

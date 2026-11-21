@@ -4,10 +4,15 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ============================================================ */
+/* Global Design System Tokens & Typography                     */
+/* ============================================================ */
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
+  --font-serif: 'Playfair Display', Georgia, serif;
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -50,44 +55,96 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-:root,
-.dark {
-  --background: #09090B;
-  --foreground: #FAFAFA;
-  --card: #18181B;
-  --card-foreground: #FAFAFA;
-  --popover: #18181B;
-  --popover-foreground: #FAFAFA;
-  --primary: #A855F7;
-  --primary-hover: #9333EA;
-  --primary-foreground: #FAFAFA;
-  --secondary: #27272A;
-  --secondary-foreground: #FAFAFA;
-  --muted: #27272A;
-  --muted-foreground: #A1A1AA;
-  --accent: #27272A;
-  --accent-foreground: #FAFAFA;
-  --accent-secondary: #6366F1;
-  --destructive: #EF4444;
-  --border: #3F3F46;
-  --input: #27272A;
-  --ring: #A855F7;
-  --chart-1: #A855F7;
-  --chart-2: #6366F1;
-  --chart-3: #EC4899;
-  --chart-4: #38BDF8;
-  --chart-5: #10B981;
-  --radius: 0.75rem;
+:root {
+  /* === Core Backgrounds === */
+  --background: #f1f0e8;        /* Jobs section parchment background */
+  --foreground: #171914;        /* Jobs section dark primary text */
 
-  /* Sidebar: AI / Innovation Dark canvas */
-  --sidebar: #09090B;
-  --sidebar-foreground: #FAFAFA;
-  --sidebar-primary: #A855F7;
-  --sidebar-primary-foreground: #FAFAFA;
-  --sidebar-accent: #27272A;
-  --sidebar-accent-foreground: #FAFAFA;
-  --sidebar-border: #27272A;
-  --sidebar-ring: #A855F7;
+  /* === Card Surfaces === */
+  --card: #FBFAF6;              /* Clean warm card surface */
+  --card-foreground: #171914;
+
+  /* === Popover === */
+  --popover: #FFFFFF;
+  --popover-foreground: #171914;
+
+  /* === Primary (CTA) === */
+  --primary: #172013;
+  --primary-hover: #26321E;
+  --primary-foreground: #FFFFFF;
+
+  /* === Secondary === */
+  --secondary: #F7F6F0;
+  --secondary-foreground: #171914;
+
+  /* === Muted === */
+  --muted: #EDEBE0;
+  --muted-foreground: #5A5D55;
+
+  /* === Accent: Lime highlight === */
+  --accent: #DDF19B;
+  --accent-foreground: #1B2710;
+  --accent-secondary: #7B9E32;
+
+  /* === Semantic === */
+  --destructive: #DC2626;
+
+  /* === Borders === */
+  --border: rgba(26, 26, 26, 0.15);
+  --input: rgba(26, 26, 26, 0.15);
+  --ring: #172013;
+
+  /* === Charts === */
+  --chart-1: #172013;
+  --chart-2: #7B9E32;
+  --chart-3: #DDF19B;
+  --chart-4: #D97706;
+  --chart-5: #DC2626;
+
+  /* === Border Radius === */
+  --radius: 0.5rem;
+
+  /* === Sidebar === */
+  --sidebar: #f1f0e8;
+  --sidebar-foreground: #171914;
+  --sidebar-primary: #172013;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #E7E5DC;
+  --sidebar-accent-foreground: #171914;
+  --sidebar-border: rgba(26, 26, 26, 0.15);
+  --sidebar-ring: #172013;
+}
+
+/* === Dark mode alternative === */
+.dark {
+  --background: #141712;
+  --foreground: #F4F6F0;
+  --card: #1B2018;
+  --card-foreground: #F4F6F0;
+  --popover: #1B2018;
+  --popover-foreground: #F4F6F0;
+  --primary: #DDF19B;
+  --primary-hover: #CFEA78;
+  --primary-foreground: #172013;
+  --secondary: #242B20;
+  --secondary-foreground: #F4F6F0;
+  --muted: #21261D;
+  --muted-foreground: #9AA094;
+  --accent: #2A3324;
+  --accent-foreground: #DDF19B;
+  --accent-secondary: #7B9E32;
+  --destructive: #EF4444;
+  --border: rgba(244, 246, 240, 0.15);
+  --input: rgba(244, 246, 240, 0.15);
+  --ring: #DDF19B;
+  --sidebar: #141712;
+  --sidebar-foreground: #F4F6F0;
+  --sidebar-primary: #DDF19B;
+  --sidebar-primary-foreground: #172013;
+  --sidebar-accent: #242B20;
+  --sidebar-accent-foreground: #F4F6F0;
+  --sidebar-border: rgba(244, 246, 240, 0.15);
+  --sidebar-ring: #DDF19B;
 }
 
 @layer base {
@@ -95,9 +152,16 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground antialiased selection:bg-purple-500/25 selection:text-purple-300;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', var(--font-sans), sans-serif;
   }
   html {
     @apply font-sans;
   }
 }
+
+/* === Scrollbar === */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: #f1f0e8; }
+::-webkit-scrollbar-thumb { background: rgba(26, 26, 26, 0.2); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(26, 26, 26, 0.4); }

@@ -157,7 +157,7 @@ ${text.slice(0, 25000)}
         });
         rawOutput = response.text;
         if (rawOutput) break;
-      } catch (modelErr) {
+      } catch {
         console.warn(`Attempt with ${model} failed, trying next model...`);
       }
     }
@@ -633,7 +633,7 @@ function parseEducationBlock(lines: string[]): ResumeEducation {
   let institution = "";
   let degree = "";
   let field_of_study = "";
-  let start_date = "";
+  const start_date = "";
   let end_date = "";
   let grade = "";
   let location = "";

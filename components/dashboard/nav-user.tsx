@@ -20,8 +20,6 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   UserIcon,
-  Settings02Icon,
-  CreditCardIcon,
   Logout03Icon,
   MoreVerticalIcon,
 } from "@hugeicons/core-free-icons";
@@ -36,7 +34,7 @@ interface NavUserProps {
 }
 
 export function NavUser({ user }: NavUserProps) {
-  const { isMobile, state } = useSidebar();
+  const { isMobile } = useSidebar();
   const initials = user.name
     ? user.name
         .split(" ")
@@ -56,113 +54,88 @@ export function NavUser({ user }: NavUserProps) {
                 size="lg"
                 tooltip={{
                   children: (
-                    <div className="flex flex-col gap-0.5">
-                      <span className="font-semibold text-xs text-[#FAFAFA]">{user.name}</span>
-                      <span className="text-[10px] text-[#A1A1AA]">{user.email}</span>
+                    <div className="flex flex-col gap-0.5 py-0.5 text-left">
+                      <span className="font-semibold text-xs text-[#171914]">{user.name}</span>
+                      <span className="text-[10px] text-[#687064]">{user.email}</span>
                     </div>
                   ),
                 }}
-                className="data-open:bg-[#27272A] hover:bg-[#27272A] rounded-xl cursor-pointer transition-colors"
+                className="data-[state=open]:bg-white data-[state=open]:border-[#1A1A1A]/20 hover:bg-white/80 rounded-md cursor-pointer transition-colors border border-transparent hover:border-[#1A1A1A]/15 p-2"
               />
             }
           >
-            <Avatar size="sm" className="size-8 rounded-lg border border-[#3F3F46]">
-              {user.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
-              <AvatarFallback className="rounded-lg bg-purple-500/20 text-purple-300 font-bold text-xs">
+            <Avatar size="sm" className="size-7 rounded-md border border-[#1A1A1A]/15 shrink-0">
+              {user.avatar && <AvatarImage src={user.avatar} alt={user.name} className="object-cover" />}
+              <AvatarFallback className="rounded-md bg-[#172013] text-[#DDF19B] font-bold text-xs">
                 {initials}
               </AvatarFallback>
             </Avatar>
 
-            <div className="grid flex-1 text-left text-xs leading-tight group-data-[collapsible=icon]:hidden">
-              <span className="truncate font-semibold text-[#FAFAFA]">
+            <div className="grid flex-1 text-left text-xs leading-tight group-data-[collapsible=icon]:hidden min-w-0">
+              <span className="truncate font-semibold text-[#171914]">
                 {user.name}
               </span>
-              <span className="truncate text-[11px] text-[#A1A1AA]">
+              <span className="truncate text-[10px] text-[#687064]">
                 {user.email}
               </span>
             </div>
 
             <HugeiconsIcon
               icon={MoreVerticalIcon}
-              className="ml-auto size-4 text-[#A1A1AA] group-data-[collapsible=icon]:hidden"
+              className="ml-auto size-4 text-[#687064] group-data-[collapsible=icon]:hidden shrink-0"
             />
           </DropdownMenuTrigger>
 
           <DropdownMenuContent
-            className="w-56 rounded-2xl p-1.5 shadow-2xl border-[#3F3F46] bg-[#18181B] text-[#FAFAFA]"
+            className="w-56 rounded-lg p-1.5 border border-[#1A1A1A]/15 bg-[#F7F6F0] text-[#171914] shadow-lg"
             side={isMobile ? "bottom" : "right"}
             align="end"
             sideOffset={8}
           >
             <div className="p-2">
               <div className="flex items-center gap-2.5">
-                <Avatar size="sm" className="size-8 rounded-lg border border-[#3F3F46]">
+                <Avatar size="sm" className="size-7 rounded-md border border-[#1A1A1A]/15">
                   {user.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
-                  <AvatarFallback className="rounded-lg bg-gradient-to-br from-[#A855F7] to-[#6366F1] text-white font-semibold text-xs">
+                  <AvatarFallback className="rounded-md bg-[#172013] text-[#DDF19B] font-bold text-xs">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col space-y-0.5 truncate text-left">
-                  <span className="text-xs font-semibold text-[#FAFAFA] truncate">
+                  <span className="text-xs font-semibold text-[#171914] truncate">
                     {user.name}
                   </span>
-                  <span className="text-[11px] text-[#A1A1AA] truncate">
+                  <span className="text-[10px] text-[#687064] truncate">
                     {user.email}
                   </span>
                 </div>
               </div>
             </div>
 
-            <DropdownMenuSeparator className="bg-[#27272A]" />
+            <DropdownMenuSeparator className="bg-[#1A1A1A]/10 h-px" />
 
             <DropdownMenuGroup>
               <DropdownMenuItem
                 render={
                   <Link
                     href="/dashboard/profile"
-                    className="flex items-center gap-2 w-full cursor-pointer hover:bg-[#27272A] rounded-lg px-2 py-1.5 text-xs text-[#FAFAFA]"
+                    className="flex items-center gap-2 w-full cursor-pointer hover:bg-[#E8E5D4] rounded-md px-2 py-1.5 text-xs font-medium text-[#171914]"
                   />
                 }
               >
-                <HugeiconsIcon icon={UserIcon} className="size-4 text-purple-400" />
-                <span>Profile Settings</span>
-              </DropdownMenuItem>
-
-              <DropdownMenuItem
-                render={
-                  <Link
-                    href="/dashboard/profile"
-                    className="flex items-center gap-2 w-full cursor-pointer hover:bg-[#27272A] rounded-lg px-2 py-1.5 text-xs text-[#FAFAFA]"
-                  />
-                }
-              >
-                <HugeiconsIcon icon={Settings02Icon} className="size-4 text-[#A1A1AA]" />
-                <span>Preferences</span>
-              </DropdownMenuItem>
-
-              <DropdownMenuItem
-                className="flex items-center justify-between cursor-pointer hover:bg-[#27272A] rounded-lg px-2 py-1.5 text-xs text-[#FAFAFA]"
-              >
-                <div className="flex items-center gap-2">
-                  <HugeiconsIcon icon={CreditCardIcon} className="size-4 text-indigo-400" />
-                  <span>Billing & Quota</span>
-                </div>
-                <span className="text-[10px] font-semibold text-purple-300 bg-purple-500/15 border border-purple-500/30 px-1.5 py-0.5 rounded-full">
-                  75 Left
-                </span>
+                <HugeiconsIcon icon={UserIcon} className="size-3.5 text-[#171914]" />
+                <span>Candidate Profile</span>
               </DropdownMenuItem>
             </DropdownMenuGroup>
 
-            <DropdownMenuSeparator className="bg-[#27272A]" />
+            <DropdownMenuSeparator className="bg-[#1A1A1A]/10 h-px" />
 
             <DropdownMenuGroup>
               <form action={signOut} className="w-full">
                 <DropdownMenuItem
-                  variant="destructive"
-                  className="w-full cursor-pointer text-red-400 hover:bg-red-500/10 rounded-lg px-2 py-1.5 text-xs"
+                  className="w-full cursor-pointer text-rose-700 font-medium hover:bg-rose-50 rounded-md px-2 py-1.5 text-xs"
                   render={<button type="submit" className="flex items-center gap-2 w-full text-left" />}
                 >
-                  <HugeiconsIcon icon={Logout03Icon} className="size-4 text-red-400" />
+                  <HugeiconsIcon icon={Logout03Icon} className="size-3.5 text-rose-700" />
                   <span>Sign Out</span>
                 </DropdownMenuItem>
               </form>

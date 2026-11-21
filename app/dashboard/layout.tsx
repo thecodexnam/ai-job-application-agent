@@ -47,15 +47,7 @@ export default async function DashboardLayout({
   return (
     <TooltipProvider delay={150}>
       <SidebarProvider defaultOpen={true}>
-        <div
-          className="flex min-h-screen w-full bg-[#EDEBE0] text-[#0F0F0F]"
-          style={{
-            backgroundImage: `linear-gradient(to right, rgba(0,0,0,0.04) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.04) 1px, transparent 1px)`,
-            backgroundSize: "2.5rem 2.5rem",
-          }}
-        >
-          {/* Lavender frame border */}
-          <div className="pointer-events-none fixed inset-0 z-50 border-4 border-[#B8AEF5]" />
+        <div className="flex min-h-screen w-full bg-[#f1f0e8] text-[#20231a]">
 
           {/* Collapsible Left Sidebar */}
           <AppSidebar
